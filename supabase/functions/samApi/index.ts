@@ -4,34 +4,42 @@ import { corsHeaders } from '../_shared/cors.ts'
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
 
 serve(async (req) => {
+  console.log('SAM API function called')
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
     const { searchTerm, agency } = await req.json()
-    const apiKey = Deno.env.get('SAM_API_KEY')
+    console.log('Request parameters:', { searchTerm, agency })
     
+    const apiKey = Deno.env.get('SAM_API_KEY')
     if (!apiKey) {
       console.error('SAM API key is missing')
       throw new Error('SAM API configuration is incomplete')
     }
+    console.log('SAM API key found')
 
-    console.log('Searching SAM.gov with term:', searchTerm)
-    
     const params = new URLSearchParams({
       q: searchTerm || '',
       ...(agency && agency !== 'all' ? { 'organizationId': agency } : {}),
     })
 
-    const response = await fetch(`${SAM_API_URL}?${params.toString()}`, {
+    const url = `${SAM_API_URL}?${params.toString()}`
+    console.log('Making request to SAM.gov:', url)
+    
+    const response = await fetch(url, {
       headers: {
         'X-Api-Key': apiKey,
         'Accept': 'application/json'
       }
     })
 
+    console.log('SAM.gov API response status:', response.status)
+    
     if (!response.ok) {
       const errorText = await response.text()
       console.error('SAM.gov API error:', response.status, errorText)
@@ -51,6 +59,8 @@ serve(async (req) => {
       submission_deadline: null,
       source: 'SAM.gov'
     })) || []
+
+    console.log('Transformed results count:', transformedResults.length)
 
     return new Response(
       JSON.stringify(transformedResults),
