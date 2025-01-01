@@ -43,7 +43,7 @@ export function ProposalTableBody({ proposals }: ProposalTableBodyProps) {
             <ProposalStatusBadge status={proposal.status} />
           </TableCell>
         </TableRow>
-      </TableBody>
-    )
+      ))}
+    </TableBody>
   )
 }
