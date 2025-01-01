@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
-import { Settings } from "lucide-react"
-import type { Settings as SettingsType } from "@/integrations/supabase/types"
+import { Settings as SettingsIcon } from "lucide-react"
+import type { Settings } from "@/integrations/supabase/types"
 
 interface SettingsOverviewCardProps {
-  settings?: SettingsType
+  settings?: Settings
   isLoading: boolean
 }
 
@@ -15,7 +15,7 @@ export function SettingsOverviewCard({ settings, isLoading }: SettingsOverviewCa
     <div className="rounded-lg border bg-card p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Account Settings</h3>
-        <Settings className="h-5 w-5 text-muted-foreground" />
+        <SettingsIcon className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
