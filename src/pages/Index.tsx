@@ -1,13 +1,31 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/App";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { useQuery } from "@tanstack/react-query";
 
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch user profile data
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -19,68 +37,59 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* User Menu */}
-      <div className="absolute top-4 right-4 flex items-center gap-4">
-        <span className="text-sm text-gray-600">{user?.email}</span>
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </Button>
-      </div>
-
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-5xl font-bold tracking-tight text-gray-900 mb-6">
-            Transform Your Digital Presence
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Create beautiful, responsive websites with our powerful platform. Built with modern technologies for the modern web.
-          </p>
-          <Button className="bg-primary hover:bg-primary/90">
-            Get Started <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="p-6 bg-white rounded-lg shadow-sm">
-            <h3 className="text-xl font-semibold mb-3">Easy to Use</h3>
-            <p className="text-gray-600">
-              Intuitive interface that makes website creation a breeze
-            </p>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        
+        <main className="flex-1 overflow-y-auto">
+          {/* Top Bar */}
+          <div className="border-b">
+            <div className="flex h-16 items-center px-4 gap-4">
+              <SidebarTrigger />
+              <div className="flex-1" />
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {profile?.username || user?.email}
+                </span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="p-6 bg-white rounded-lg shadow-sm">
-            <h3 className="text-xl font-semibold mb-3">Responsive Design</h3>
-            <p className="text-gray-600">
-              Looks great on all devices, from mobile to desktop
-            </p>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow-sm">
-            <h3 className="text-xl font-semibold mb-3">Modern Stack</h3>
-            <p className="text-gray-600">
-              Built with React, TypeScript, and Supabase
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* CTA Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="bg-primary/5 rounded-2xl p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-gray-600 mb-6">
-            Join thousands of users who are already creating amazing websites
-          </p>
-          <Button variant="secondary">
-            Start Building Now
-          </Button>
-        </div>
+          {/* Dashboard Content */}
+          <div className="container mx-auto p-6">
+            <h1 className="text-3xl font-bold mb-6">Welcome Back{profile?.username ? `, ${profile.username}` : ''}!</h1>
+            
+            {/* Dashboard Cards */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="font-semibold mb-2">Profile Completion</h3>
+                <p className="text-sm text-muted-foreground">
+                  Complete your profile to get the most out of our platform.
+                </p>
+              </div>
+              
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="font-semibold mb-2">Recent Activity</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track your recent actions and updates.
+                </p>
+              </div>
+              
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="font-semibold mb-2">Quick Actions</h3>
+                <p className="text-sm text-muted-foreground">
+                  Access frequently used features and tools.
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
