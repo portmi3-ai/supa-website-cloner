@@ -66,23 +66,13 @@ const AuthPage = () => {
                 email_label: 'Email address',
                 password_label: 'Password',
                 button_label: 'Sign in',
-                loading_button_label: (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Signing in...
-                  </div>
-                ),
+                button_loading_label: 'Signing in...',
               },
               sign_up: {
                 email_label: 'Email address',
                 password_label: 'Create a password',
                 button_label: 'Create account',
-                loading_button_label: (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating account...
-                  </div>
-                ),
+                button_loading_label: 'Creating account...',
               },
             },
           }}
