@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -20,8 +21,12 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-center mb-6">Welcome Back</h1>
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+          <p className="text-gray-500">Sign in to your account to continue</p>
+        </div>
+        
         <Auth
           supabaseClient={supabase}
           appearance={{ 
@@ -35,10 +40,52 @@ const AuthPage = () => {
               anchor: {
                 color: 'hsl(var(--primary))',
               },
+              container: {
+                gap: '1rem',
+              },
+              divider: {
+                margin: '1.5rem 0',
+              },
+              input: {
+                borderRadius: '0.375rem',
+              },
+              message: {
+                borderRadius: '0.375rem',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+              },
             },
           }}
           theme="light"
           providers={[]}
+          redirectTo={window.location.origin}
+          onlyThirdPartyProviders={false}
+          localization={{
+            variables: {
+              sign_in: {
+                email_label: 'Email address',
+                password_label: 'Password',
+                button_label: 'Sign in',
+                loading_button_label: (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Signing in...
+                  </div>
+                ),
+              },
+              sign_up: {
+                email_label: 'Email address',
+                password_label: 'Create a password',
+                button_label: 'Create account',
+                loading_button_label: (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating account...
+                  </div>
+                ),
+              },
+            },
+          }}
         />
       </div>
     </div>
