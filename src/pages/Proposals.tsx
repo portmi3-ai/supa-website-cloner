@@ -3,7 +3,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProposalsSearch } from "@/components/proposals/ProposalsSearch"
 import { ProposalsTable } from "@/components/proposals/ProposalsTable"
-import { FileText } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Proposal } from "@/types/proposals.types"
@@ -20,7 +19,7 @@ import { format } from "date-fns"
 
 const Proposals = () => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedAgency, setSelectedAgency] = useState<string>("")
+  const [selectedAgency, setSelectedAgency] = useState<string>("all")
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const { toast } = useToast()
@@ -37,7 +36,7 @@ const Proposals = () => {
           supabase.functions.invoke("searchFederalData", {
             body: {
               searchTerm: searchQuery,
-              agency: selectedAgency,
+              agency: selectedAgency === "all" ? undefined : selectedAgency,
               startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
               endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
             },
@@ -45,16 +44,44 @@ const Proposals = () => {
           supabase.functions.invoke("samApi", {
             body: {
               searchTerm: searchQuery,
-              agency: selectedAgency,
+              agency: selectedAgency === "all" ? undefined : selectedAgency,
             },
           }),
         ])
 
-        if (grantsResponse.error) throw grantsResponse.error
-        if (federalResponse.error) throw federalResponse.error
-        if (samResponse.error) throw samResponse.error
+        // Log responses for debugging
+        console.log('Grants API Response:', grantsResponse)
+        console.log('Federal Data Response:', federalResponse)
+        console.log('SAM API Response:', samResponse)
 
-        // Combine results from all sources
+        if (grantsResponse.error) {
+          console.error('Grants API Error:', grantsResponse.error)
+          toast({
+            title: "Error fetching grants data",
+            description: "There was an error fetching grants data. Please try again.",
+            variant: "destructive",
+          })
+        }
+
+        if (federalResponse.error) {
+          console.error('Federal Data Error:', federalResponse.error)
+          toast({
+            title: "Error fetching federal data",
+            description: "There was an error fetching federal data. Please try again.",
+            variant: "destructive",
+          })
+        }
+
+        if (samResponse.error) {
+          console.error('SAM API Error:', samResponse.error)
+          toast({
+            title: "Error fetching SAM data",
+            description: "There was an error fetching SAM data. Please try again.",
+            variant: "destructive",
+          })
+        }
+
+        // Combine results from all sources, filtering out failed responses
         const combinedResults = [
           ...(grantsResponse.data || []),
           ...(federalResponse.data || []),
@@ -70,7 +97,7 @@ const Proposals = () => {
           description: "There was an error fetching the opportunities. Please try again.",
           variant: "destructive",
         })
-        throw error
+        return []
       }
     },
   })
@@ -109,7 +136,7 @@ const Proposals = () => {
               <SelectValue placeholder="Select Agency" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Agencies</SelectItem>
+              <SelectItem value="all">All Agencies</SelectItem>
               <SelectItem value="DOD">Department of Defense</SelectItem>
               <SelectItem value="NASA">NASA</SelectItem>
               <SelectItem value="ED">Department of Education</SelectItem>
