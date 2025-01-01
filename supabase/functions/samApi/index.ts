@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from '../_shared/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
 
@@ -24,6 +28,7 @@ serve(async (req) => {
     console.log('SAM API key found')
 
     const params = new URLSearchParams({
+      api_key: apiKey,
       q: searchTerm || '',
       ...(agency && agency !== 'all' ? { 'organizationId': agency } : {}),
     })
@@ -33,7 +38,6 @@ serve(async (req) => {
     
     const response = await fetch(url, {
       headers: {
-        'X-Api-Key': apiKey,
         'Accept': 'application/json'
       }
     })
@@ -55,8 +59,8 @@ serve(async (req) => {
       description: entity.entityRegistration?.purposeOfRegistration || '',
       funding_agency: entity.entityRegistration?.agencyBusinessPurposeCode || null,
       funding_amount: null,
-      status: 'active',
       submission_deadline: null,
+      status: 'active',
       source: 'SAM.gov'
     })) || []
 
