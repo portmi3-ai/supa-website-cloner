@@ -66,13 +66,13 @@ const AuthPage = () => {
                 email_label: 'Email address',
                 password_label: 'Password',
                 button_label: 'Sign in',
-                button_loading_label: 'Signing in...',
+                loading_button_label: 'Signing in...',
               },
               sign_up: {
                 email_label: 'Email address',
                 password_label: 'Create a password',
                 button_label: 'Create account',
-                button_loading_label: 'Creating account...',
+                loading_button_label: 'Creating account...',
               },
             },
           }}
