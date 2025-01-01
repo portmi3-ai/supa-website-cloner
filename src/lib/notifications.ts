@@ -8,6 +8,7 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 export const getNotificationIcon = (type: NotificationType) => {

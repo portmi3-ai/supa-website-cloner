@@ -26,7 +26,13 @@ const Notifications = () => {
 
       if (error) throw error
 
-      setNotifications(data)
+      // Convert the type from string to NotificationType
+      const typedNotifications = data.map(notification => ({
+        ...notification,
+        type: notification.type as NotificationType
+      }))
+
+      setNotifications(typedNotifications)
     } catch (error) {
       console.error('Error fetching notifications:', error)
       toast({
