@@ -3,6 +3,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const AuthPage = () => {
     // Check if user is already logged in
     supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
+        toast.success("Successfully logged in!");
         navigate("/");
       }
     });
@@ -22,7 +24,19 @@ const AuthPage = () => {
         <h1 className="text-2xl font-bold text-center mb-6">Welcome Back</h1>
         <Auth
           supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
+          appearance={{ 
+            theme: ThemeSupa,
+            style: {
+              button: {
+                background: 'hsl(var(--primary))',
+                color: 'white',
+                borderRadius: '0.375rem',
+              },
+              anchor: {
+                color: 'hsl(var(--primary))',
+              },
+            },
+          }}
           theme="light"
           providers={[]}
         />
