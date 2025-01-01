@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 import Index from "./pages/Index"
 import Auth from "./pages/Auth"
 import Profile from "./pages/Profile"
+import Settings from "./pages/Settings"
 import { supabase } from "./integrations/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
@@ -69,6 +70,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />
