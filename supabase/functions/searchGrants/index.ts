@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from './cors.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const GRANTS_API_URL = "https://api.grants.gov/grantsws/rest/opportunities/search/"
+const GRANTS_API_URL = "https://www.grants.gov/grantsws/rest/opportunities/search/"
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -27,6 +27,7 @@ serve(async (req) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'User-Agent': 'Grants.gov API Client', // Adding User-Agent header to avoid 403
       },
     })
     
@@ -52,38 +53,16 @@ serve(async (req) => {
       )
     }
 
-    const transformedGrants = data.oppHits.map((grant: any) => {
-      let awardCeiling = null
-      if (grant.awardCeiling) {
-        const parsed = parseFloat(grant.awardCeiling)
-        if (!isNaN(parsed)) {
-          awardCeiling = parsed
-        }
-      }
-
-      let closeDate = null
-      if (grant.closeDate) {
-        try {
-          closeDate = new Date(grant.closeDate).toISOString()
-        } catch (e) {
-          console.warn('Failed to parse close date:', grant.closeDate)
-        }
-      }
-
-      return {
-        id: grant.id || crypto.randomUUID(),
-        title: grant.title || 'Untitled Grant',
-        description: grant.description || grant.synopsis || '',
-        funding_agency: grant.agency || grant.agencyName || 'Unknown Agency',
-        funding_amount: awardCeiling,
-        submission_deadline: closeDate,
-        status: 'posted',
-        opportunity_number: grant.opportunityNumber || null,
-        category: grant.categoryOfFunding || null,
-        eligibility: grant.eligibleApplicants || null,
-        posted_date: grant.postDate ? new Date(grant.postDate).toISOString() : null,
-      }
-    })
+    const transformedGrants = data.oppHits.map((grant: any) => ({
+      id: grant.id || crypto.randomUUID(),
+      title: grant.title || 'Untitled Grant',
+      description: grant.description || grant.synopsis || '',
+      funding_agency: grant.agency || grant.agencyName || 'Unknown Agency',
+      funding_amount: grant.awardCeiling ? parseFloat(grant.awardCeiling) : null,
+      submission_deadline: grant.closeDate ? new Date(grant.closeDate).toISOString() : null,
+      status: 'posted',
+      source: 'Grants.gov'
+    }))
 
     console.log(`Successfully transformed ${transformedGrants.length} grants`)
 
