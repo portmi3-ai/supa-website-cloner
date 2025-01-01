@@ -35,18 +35,26 @@ const AuthPage = () => {
                 background: 'hsl(var(--primary))',
                 color: 'white',
                 borderRadius: '0.375rem',
+                cursor: 'pointer',
+                opacity: '1',
+                pointerEvents: 'auto',
+              },
+              input: {
+                borderRadius: '0.375rem',
+                opacity: '1',
+                backgroundColor: 'white',
+                pointerEvents: 'auto',
               },
               anchor: {
                 color: 'hsl(var(--primary))',
+                opacity: '1',
+                pointerEvents: 'auto',
               },
               container: {
                 gap: '1rem',
               },
               divider: {
                 margin: '1.5rem 0',
-              },
-              input: {
-                borderRadius: '0.375rem',
               },
               message: {
                 borderRadius: '0.375rem',
