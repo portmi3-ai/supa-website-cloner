@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -58,8 +57,7 @@ const AuthPage = () => {
           }}
           theme="light"
           providers={[]}
-          redirectTo={window.location.origin}
-          onlyThirdPartyProviders={false}
+          redirectTo={`${window.location.origin}/auth/callback`}
           localization={{
             variables: {
               sign_in: {
