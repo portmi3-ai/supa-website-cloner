@@ -8,44 +8,56 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Proposal } from "@/types/proposals.types"
 import { useToast } from "@/components/ui/use-toast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { DatePicker } from "@/components/ui/date-picker"
+import { format } from "date-fns"
 
 const Proposals = () => {
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedAgency, setSelectedAgency] = useState<string>("")
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
   const { toast } = useToast()
 
-  const { data: proposals = [], isLoading, error } = useQuery({
-    queryKey: ["proposals", searchQuery],
+  // Fetch data from multiple sources
+  const { data: federalData = [], isLoading: isFederalLoading } = useQuery({
+    queryKey: ["federalData", searchQuery, selectedAgency, startDate, endDate],
     queryFn: async () => {
       try {
-        // First try to fetch from grants.gov API
-        const { data: grantsData, error: grantsError } = await supabase.functions.invoke(
-          'searchGrants',
-          {
+        const [grantsResponse, federalResponse] = await Promise.all([
+          supabase.functions.invoke("searchGrants", {
             body: { searchTerm: searchQuery },
-          }
-        )
+          }),
+          supabase.functions.invoke("searchFederalData", {
+            body: {
+              searchTerm: searchQuery,
+              agency: selectedAgency,
+              startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+              endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+            },
+          }),
+        ])
 
-        if (grantsError) throw grantsError
+        if (grantsResponse.error) throw grantsResponse.error
+        if (federalResponse.error) throw federalResponse.error
 
-        // Merge with local proposals
-        const { data: localProposals, error: localError } = await supabase
-          .from("proposals")
-          .select("*")
-          .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,funding_agency.ilike.%${searchQuery}%`)
+        // Combine results from both sources
+        const combinedResults = [
+          ...(grantsResponse.data || []),
+          ...(federalResponse.data || []),
+        ]
 
-        if (localError) throw localError
-
-        // Combine and deduplicate results
-        const allProposals = [...(grantsData || []), ...(localProposals || [])]
-        const uniqueProposals = Array.from(
-          new Map(allProposals.map(item => [item.id, item])).values()
-        )
-
-        return uniqueProposals as Proposal[]
+        return combinedResults as Proposal[]
       } catch (error) {
         toast({
-          title: "Error fetching proposals",
-          description: "There was an error fetching the proposals. Please try again.",
+          title: "Error fetching opportunities",
+          description: "There was an error fetching the opportunities. Please try again.",
           variant: "destructive",
         })
         throw error
@@ -53,54 +65,90 @@ const Proposals = () => {
     },
   })
 
+  // Fetch local proposals
+  const { data: localProposals = [], isLoading: isLocalLoading } = useQuery({
+    queryKey: ["proposals", searchQuery],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("proposals")
+        .select("*")
+        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,funding_agency.ilike.%${searchQuery}%`)
+
+      if (error) throw error
+      return data as Proposal[]
+    },
+  })
+
+  // Combine all results
+  const allProposals = [...(federalData || []), ...(localProposals || [])]
+  const isLoading = isFederalLoading || isLocalLoading
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h1 className="text-3xl font-bold">Federal Grants & Proposals</h1>
+          <h1 className="text-3xl font-bold">Federal Grants & Contracts</h1>
           <div className="w-full md:w-96">
             <ProposalsSearch value={searchQuery} onChange={setSearchQuery} />
           </div>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Select value={selectedAgency} onValueChange={setSelectedAgency}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Agency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Agencies</SelectItem>
+              <SelectItem value="DOD">Department of Defense</SelectItem>
+              <SelectItem value="NASA">NASA</SelectItem>
+              <SelectItem value="ED">Department of Education</SelectItem>
+              <SelectItem value="DOE">Department of Energy</SelectItem>
+              <SelectItem value="HHS">Health and Human Services</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <DatePicker
+            selected={startDate}
+            onSelect={setStartDate}
+            placeholderText="Start Date"
+          />
+
+          <DatePicker
+            selected={endDate}
+            onSelect={setEndDate}
+            placeholderText="End Date"
+          />
         </div>
 
         <div className="grid gap-6">
           {isLoading ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12">
-                <p>Searching grants and proposals...</p>
+                <p>Searching opportunities...</p>
               </CardContent>
             </Card>
-          ) : error ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Error fetching results</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  There was an error fetching the results. Please try again later.
-                </p>
-              </CardContent>
-            </Card>
-          ) : proposals.length === 0 ? (
+          ) : allProposals.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No results found</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {searchQuery
-                    ? `We couldn't find any grants or proposals matching "${searchQuery}".`
-                    : "Start typing to search for federal grants and proposals."}
+                    ? `We couldn't find any opportunities matching "${searchQuery}".`
+                    : "Start typing to search for federal opportunities."}
                   <br />
-                  Try adjusting your search terms or check back later for new opportunities.
+                  Try adjusting your search terms or filters, or check back later for new opportunities.
                 </p>
               </CardContent>
             </Card>
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Available Grants & Proposals</CardTitle>
+                <CardTitle>Available Opportunities</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProposalsTable proposals={proposals} />
+                <ProposalsTable proposals={allProposals} />
               </CardContent>
             </Card>
           )}
