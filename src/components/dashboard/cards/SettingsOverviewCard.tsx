@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 import { Settings as SettingsIcon } from "lucide-react"
-import type { Settings } from "@/integrations/supabase/types"
+import type { Settings } from "@/types/settings.types"
 
 interface SettingsOverviewCardProps {
-  settings?: Settings
-  isLoading: boolean
+  settings?: Settings;
+  isLoading: boolean;
 }
 
 export function SettingsOverviewCard({ settings, isLoading }: SettingsOverviewCardProps) {

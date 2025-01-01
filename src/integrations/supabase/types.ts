@@ -1,3 +1,5 @@
+import type { Settings } from "@/types/settings.types";
+
 export type Json =
   | string
   | number
@@ -64,13 +66,7 @@ export type Database = {
         Relationships: []
       }
       settings: {
-        Row: {
-          created_at: string | null
-          email_notifications: boolean | null
-          id: string
-          theme: string | null
-          updated_at: string | null
-        }
+        Row: Settings
         Insert: {
           created_at?: string | null
           email_notifications?: boolean | null
@@ -199,3 +195,5 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export type { Settings };
