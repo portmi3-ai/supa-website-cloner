@@ -8,6 +8,9 @@ import Index from "./pages/Index"
 import Auth from "./pages/Auth"
 import Profile from "./pages/Profile"
 import Settings from "./pages/Settings"
+import Analytics from "./pages/Analytics"
+import Notifications from "./pages/Notifications"
+import Help from "./pages/Help"
 import { supabase } from "./integrations/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
@@ -78,6 +81,30 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <ProtectedRoute>
+                    <Help />
                   </ProtectedRoute>
                 }
               />

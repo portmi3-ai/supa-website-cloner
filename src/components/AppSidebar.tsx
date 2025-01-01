@@ -1,4 +1,4 @@
-import { User, Home, Settings } from "lucide-react"
+import { BarChart, Bell, Home, HelpCircle, Settings, User } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import {
   Sidebar,
@@ -21,14 +21,29 @@ export function AppSidebar() {
       onClick: () => navigate("/"),
     },
     {
+      title: "Analytics",
+      icon: BarChart,
+      onClick: () => navigate("/analytics"),
+    },
+    {
       title: "Profile",
       icon: User,
       onClick: () => navigate("/profile"),
     },
     {
+      title: "Notifications",
+      icon: Bell,
+      onClick: () => navigate("/notifications"),
+    },
+    {
       title: "Settings",
       icon: Settings,
       onClick: () => navigate("/settings"),
+    },
+    {
+      title: "Help",
+      icon: HelpCircle,
+      onClick: () => navigate("/help"),
     },
   ]
 
