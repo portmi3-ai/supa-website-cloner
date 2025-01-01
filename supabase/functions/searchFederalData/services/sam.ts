@@ -3,8 +3,13 @@ import { SearchParams, FederalDataResult } from '../types.ts'
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
 
 export async function fetchSAMData(params: SearchParams, apiKey: string): Promise<FederalDataResult[]> {
-  console.log('Fetching SAM.gov data...')
+  console.log('Fetching SAM.gov data with params:', params)
   try {
+    if (!apiKey) {
+      console.error('SAM API key is missing')
+      throw new Error('SAM API key is required')
+    }
+
     const response = await fetch(`${SAM_API_URL}?q=${params.searchTerm}`, {
       headers: {
         'X-Api-Key': apiKey,
@@ -13,7 +18,9 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     })
     
     if (!response.ok) {
-      throw new Error(`SAM.gov API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('SAM.gov API error:', response.status, errorText)
+      throw new Error(`SAM.gov API error: ${response.status} ${response.statusText}`)
     }
     
     const data = await response.json()
@@ -33,6 +40,6 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     }))
   } catch (error) {
     console.error('SAM.gov fetch error:', error)
-    return []
+    throw error
   }
 }
