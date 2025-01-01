@@ -1,50 +1,51 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { createContext, useContext, useEffect, useState } from "react";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import { supabase } from "./integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { createContext, useContext, useEffect, useState } from "react"
+import Index from "./pages/Index"
+import Auth from "./pages/Auth"
+import Profile from "./pages/Profile"
+import { supabase } from "./integrations/supabase/client"
+import type { User } from "@supabase/supabase-js"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 // Create auth context
-const AuthContext = createContext<{ user: User | null }>({ user: null });
+const AuthContext = createContext<{ user: User | null }>({ user: null })
 
 export const useAuth = () => {
-  return useContext(AuthContext);
-};
+  return useContext(AuthContext)
+}
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user } = useAuth()
   if (!user) {
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" />
   }
-  return <>{children}</>;
-};
+  return <>{children}</>
+}
 
 const App = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
     // Check initial auth state
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+      setUser(session?.user ?? null)
+    })
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+      setUser(session?.user ?? null)
+    })
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -63,12 +64,20 @@ const App = () => {
                 }
               />
               <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </AuthContext.Provider>
     </QueryClientProvider>
-  );
-};
+  )
+}
 
-export default App;
+export default App
