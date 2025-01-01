@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useNavigate } from "react-router-dom"
-import { User, Settings, Bell } from "lucide-react"
+import { User, Settings, Bell, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useEffect, useState } from "react"
 
 interface DashboardCardsProps {
   username?: string
@@ -14,6 +15,7 @@ interface DashboardCardsProps {
 export function DashboardCards({ username }: DashboardCardsProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [recentActivity, setRecentActivity] = useState<string[]>([])
 
   // Fetch user settings
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
@@ -48,6 +50,58 @@ export function DashboardCards({ username }: DashboardCardsProps) {
 
   const profileCompletion = calculateProfileCompletion()
 
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user?.id}`,
+        },
+        (payload) => {
+          toast.success("Profile updated")
+          setRecentActivity((prev) => [
+            `Profile updated at ${new Date().toLocaleTimeString()}`,
+            ...prev.slice(0, 4),
+          ])
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "settings",
+          filter: `id=eq.${user?.id}`,
+        },
+        (payload) => {
+          toast.success("Settings updated")
+          setRecentActivity((prev) => [
+            `Settings updated at ${new Date().toLocaleTimeString()}`,
+            ...prev.slice(0, 4),
+          ])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
+  // Get profile completion suggestions
+  const getCompletionSuggestions = () => {
+    const suggestions = []
+    if (!username) suggestions.push("Add a username")
+    if (!settings?.email_notifications) suggestions.push("Enable notifications")
+    if (!settings?.theme) suggestions.push("Set your preferred theme")
+    return suggestions
+  }
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">
@@ -66,6 +120,20 @@ export function DashboardCards({ username }: DashboardCardsProps) {
             <p className="text-sm text-muted-foreground">
               {profileCompletion}% of your profile is complete
             </p>
+            {getCompletionSuggestions().length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Suggestions:</p>
+                {getCompletionSuggestions().map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center text-sm text-muted-foreground"
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -100,31 +168,26 @@ export function DashboardCards({ username }: DashboardCardsProps) {
           </div>
         </div>
 
-        {/* Quick Actions Card */}
+        {/* Recent Activity Card */}
         <div className="rounded-lg border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Quick Actions</h3>
+            <h3 className="font-semibold">Recent Activity</h3>
             <Bell className="h-5 w-5 text-muted-foreground" />
           </div>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => navigate("/profile")}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Update Profile
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => navigate("/settings")}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Adjust Settings
-            </Button>
+          <div className="space-y-4">
+            {recentActivity.length > 0 ? (
+              <div className="space-y-2">
+                {recentActivity.map((activity, index) => (
+                  <p key={index} className="text-sm text-muted-foreground">
+                    {activity}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No recent activity to show
+              </p>
+            )}
           </div>
         </div>
       </div>
