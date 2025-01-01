@@ -8,6 +8,7 @@ import { Contract } from "@/types/contracts.types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { useState } from "react"
+import { FileX } from "lucide-react"
 
 const Contracts = () => {
   const { toast } = useToast()
@@ -65,11 +66,19 @@ const Contracts = () => {
               ) : filteredContracts && filteredContracts.length > 0 ? (
                 <ContractsTable contracts={filteredContracts} />
               ) : (
-                <p className="text-muted-foreground">
-                  {searchQuery
-                    ? "No contracts found matching your search."
-                    : "No contracts found."}
-                </p>
+                <div className="text-center py-8">
+                  <FileX className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">
+                    {searchQuery
+                      ? "No contracts found matching your search criteria"
+                      : "No contracts available"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {searchQuery
+                      ? "Try adjusting your search terms or clearing the search"
+                      : "Check back later for new contract opportunities"}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
