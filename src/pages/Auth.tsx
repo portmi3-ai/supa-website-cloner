@@ -65,7 +65,7 @@ const AuthPage = () => {
           }}
           theme="light"
           providers={[]}
-          redirectTo={`${window.location.origin}/auth/callback`}
+          redirectTo={window.location.origin + '/auth/callback'}
           localization={{
             variables: {
               sign_in: {
