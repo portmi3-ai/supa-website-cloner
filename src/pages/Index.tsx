@@ -1,9 +1,34 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/App";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of your account.",
+    });
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      {/* User Menu */}
+      <div className="absolute top-4 right-4 flex items-center gap-4">
+        <span className="text-sm text-gray-600">{user?.email}</span>
+        <Button variant="outline" size="sm" onClick={handleLogout}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
+      </div>
+
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
         <div className="max-w-3xl mx-auto text-center">
