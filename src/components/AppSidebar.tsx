@@ -1,4 +1,4 @@
-import { BarChart, Bell, Home, HelpCircle, Settings, User } from "lucide-react"
+import { BarChart, Bell, Home, HelpCircle, Settings, User, FileText, FileCheck, Files } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import {
   Sidebar,
@@ -19,6 +19,21 @@ export function AppSidebar() {
       title: "Dashboard",
       icon: Home,
       onClick: () => navigate("/"),
+    },
+    {
+      title: "Contracts",
+      icon: FileText,
+      onClick: () => navigate("/contracts"),
+    },
+    {
+      title: "Proposals",
+      icon: FileCheck,
+      onClick: () => navigate("/proposals"),
+    },
+    {
+      title: "Documents",
+      icon: Files,
+      onClick: () => navigate("/documents"),
     },
     {
       title: "Analytics",

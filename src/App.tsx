@@ -11,6 +11,9 @@ import Settings from "./pages/Settings"
 import Analytics from "./pages/Analytics"
 import Notifications from "./pages/Notifications"
 import Help from "./pages/Help"
+import Contracts from "./pages/Contracts"
+import Proposals from "./pages/Proposals"
+import Documents from "./pages/Documents"
 import { supabase } from "./integrations/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
@@ -105,6 +108,30 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Help />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contracts"
+                element={
+                  <ProtectedRoute>
+                    <Contracts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/proposals"
+                element={
+                  <ProtectedRoute>
+                    <Proposals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  <ProtectedRoute>
+                    <Documents />
                   </ProtectedRoute>
                 }
               />
