@@ -30,7 +30,7 @@ const Proposals = () => {
     queryKey: ["federalData", searchQuery, selectedAgency, startDate, endDate],
     queryFn: async () => {
       try {
-        const [grantsResponse, federalResponse] = await Promise.all([
+        const [grantsResponse, federalResponse, samResponse] = await Promise.all([
           supabase.functions.invoke("searchGrants", {
             body: { searchTerm: searchQuery },
           }),
@@ -42,19 +42,29 @@ const Proposals = () => {
               endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
             },
           }),
+          supabase.functions.invoke("samApi", {
+            body: {
+              searchTerm: searchQuery,
+              agency: selectedAgency,
+            },
+          }),
         ])
 
         if (grantsResponse.error) throw grantsResponse.error
         if (federalResponse.error) throw federalResponse.error
+        if (samResponse.error) throw samResponse.error
 
-        // Combine results from both sources
+        // Combine results from all sources
         const combinedResults = [
           ...(grantsResponse.data || []),
           ...(federalResponse.data || []),
+          ...(samResponse.data || []),
         ]
 
+        console.log('Combined federal data results:', combinedResults)
         return combinedResults as Proposal[]
       } catch (error) {
+        console.error('Error fetching opportunities:', error)
         toast({
           title: "Error fetching opportunities",
           description: "There was an error fetching the opportunities. Please try again.",
@@ -122,36 +132,14 @@ const Proposals = () => {
         </div>
 
         <div className="grid gap-6">
-          {isLoading ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-12">
-                <p>Searching opportunities...</p>
-              </CardContent>
-            </Card>
-          ) : allProposals.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">No results found</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {searchQuery
-                    ? `We couldn't find any opportunities matching "${searchQuery}".`
-                    : "Start typing to search for federal opportunities."}
-                  <br />
-                  Try adjusting your search terms or filters, or check back later for new opportunities.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Available Opportunities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProposalsTable proposals={allProposals} />
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Opportunities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProposalsTable proposals={allProposals} isLoading={isLoading} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>

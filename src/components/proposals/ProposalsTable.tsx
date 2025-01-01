@@ -15,12 +15,13 @@ import { useState } from "react"
 
 interface ProposalsTableProps {
   proposals: Proposal[]
+  isLoading?: boolean
 }
 
 type SortField = "title" | "funding_agency" | "funding_amount" | "submission_deadline" | "status"
 type SortDirection = "asc" | "desc"
 
-export function ProposalsTable({ proposals }: ProposalsTableProps) {
+export function ProposalsTable({ proposals, isLoading }: ProposalsTableProps) {
   const [sortField, setSortField] = useState<SortField>("title")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
 
@@ -60,6 +61,14 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
         return 0
     }
   })
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      </div>
+    )
+  }
 
   return (
     <Table>
@@ -118,28 +127,36 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sortedProposals.map((proposal) => (
-          <TableRow key={proposal.id}>
-            <TableCell>{proposal.title}</TableCell>
-            <TableCell>{proposal.funding_agency || "N/A"}</TableCell>
-            <TableCell>
-              {proposal.funding_amount
-                ? new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  }).format(proposal.funding_amount)
-                : "N/A"}
-            </TableCell>
-            <TableCell>
-              {proposal.submission_deadline
-                ? format(new Date(proposal.submission_deadline), "MMM d, yyyy")
-                : "N/A"}
-            </TableCell>
-            <TableCell>
-              <ProposalStatusBadge status={proposal.status} />
+        {sortedProposals.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8">
+              No results found. Try adjusting your search criteria.
             </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          sortedProposals.map((proposal) => (
+            <TableRow key={proposal.id}>
+              <TableCell>{proposal.title}</TableCell>
+              <TableCell>{proposal.funding_agency || "N/A"}</TableCell>
+              <TableCell>
+                {proposal.funding_amount
+                  ? new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(proposal.funding_amount)
+                  : "N/A"}
+              </TableCell>
+              <TableCell>
+                {proposal.submission_deadline
+                  ? format(new Date(proposal.submission_deadline), "MMM d, yyyy")
+                  : "N/A"}
+              </TableCell>
+              <TableCell>
+                <ProposalStatusBadge status={proposal.status} />
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   )
