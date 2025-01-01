@@ -105,6 +105,45 @@ export type Database = {
         }
         Relationships: []
       }
+      proposals: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          funding_agency: string | null
+          funding_amount: number | null
+          id: string
+          status: Database["public"]["Enums"]["proposal_status"] | null
+          submission_deadline: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          funding_agency?: string | null
+          funding_amount?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["proposal_status"] | null
+          submission_deadline?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          funding_agency?: string | null
+          funding_amount?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["proposal_status"] | null
+          submission_deadline?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string | null
@@ -143,6 +182,12 @@ export type Database = {
         | "active"
         | "completed"
         | "cancelled"
+      proposal_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "awarded"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
