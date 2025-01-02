@@ -23,11 +23,20 @@ export function useFederalContractsSearch(params: SearchParams) {
     queryKey: ["federal-contracts", params],
     queryFn: async () => {
       try {
+        console.log('Testing RLS - Current user:', user?.id)
         console.log('Fetching federal contracts with params:', params)
+        
+        // Test RLS by attempting to fetch data
+        const { data: testData, error: testError } = await supabase
+          .from('federal_data')
+          .select('*')
+          .limit(1)
+
+        console.log('RLS Test - Result:', testData ? 'Success' : 'No data', 'Error:', testError)
         
         const { data, error } = await supabase.functions.invoke("searchFederalData", {
           body: {
-            searchTerm: params.searchTerm || '*', // Always send a search term
+            searchTerm: params.searchTerm || '*',
             agency: params.agency,
             startDate: params.startDate?.toISOString(),
             endDate: params.endDate?.toISOString(),
@@ -36,7 +45,7 @@ export function useFederalContractsSearch(params: SearchParams) {
             activeOnly: params.activeOnly,
             sortField: params.sortField,
             sortDirection: params.sortDirection,
-            limit: 50 // Match the SAM.gov page size
+            limit: 50
           }
         })
 
@@ -67,8 +76,8 @@ export function useFederalContractsSearch(params: SearchParams) {
         throw error
       }
     },
-    enabled: true, // Always enabled to show initial results
+    enabled: !!user, // Only run query when user is authenticated
     staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
-    retry: 2, // Retry failed requests twice
+    retry: 2,
   })
 }
