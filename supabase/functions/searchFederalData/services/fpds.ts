@@ -9,16 +9,11 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
   })
 
   try {
-    // Ensure search query is valid - if empty or undefined, use '*' as default
-    const searchQuery = params.searchTerm?.trim() || '*'
-    
-    // Validate search query
-    if (searchQuery === '') {
-      console.warn('Empty search query provided for FPDS, using default "*"')
-    }
-
     // Build query parameters
     const queryParams = new URLSearchParams()
+    
+    // Handle empty search query - use '*' as default
+    const searchQuery = params.searchTerm?.trim() || '*'
     queryParams.append('q', searchQuery)
 
     // Add optional agency filter if provided

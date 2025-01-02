@@ -14,18 +14,14 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       throw new Error('SAM API key is required')
     }
 
-    // Ensure search query is valid - if empty or undefined, use '*' as default
-    const searchQuery = params.searchTerm?.trim() || '*'
-    
-    // Validate search query
-    if (searchQuery === '') {
-      console.warn('Empty search query provided, using default "*"')
-    }
-
     // Build query parameters
     const queryParams = new URLSearchParams()
     queryParams.append('api_key', apiKey)
+    
+    // Handle empty search query - use '*' as default
+    const searchQuery = params.searchTerm?.trim() || '*'
     queryParams.append('q', searchQuery)
+    
     queryParams.append('page', '0')
     queryParams.append('size', '100')
 
@@ -53,7 +49,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
         status: response.status,
         statusText: response.statusText,
         error: errorText,
-        requestUrl,
+        requestUrl: requestUrl.replace(apiKey, '[REDACTED]'),
       })
       throw new Error(`SAM.gov API error: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -62,7 +58,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     console.log('SAM.gov results count:', data.totalRecords || 0)
     
     // Map API response to FederalDataResult type
-    return (data.entities || []).map((entity: any) => ({
+    return (data.entityData || []).map((entity: any) => ({
       id: entity.ueiSAM || crypto.randomUUID(),
       title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
       description: `${entity.entityRegistration?.businessType || ''} - ${entity.entityRegistration?.physicalAddress?.city || ''}, ${entity.entityRegistration?.physicalAddress?.stateOrProvinceCode || ''}`,
@@ -76,6 +72,6 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     }))
   } catch (error) {
     console.error('SAM.gov fetch error:', error)
-    throw error
+    return []
   }
 }
