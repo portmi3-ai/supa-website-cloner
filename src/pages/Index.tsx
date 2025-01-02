@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardCards } from "@/components/dashboard/DashboardCards"
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
+import { LoadingSpinner } from "@/components/ui/loading"
 import { toast } from "sonner"
 
 const Index = () => {
@@ -46,20 +46,14 @@ const Index = () => {
   })
 
   if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-        </div>
-      </DashboardLayout>
-    )
+    return <LoadingSpinner />
   }
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar username={profile?.username} email={user?.email} />
       <DashboardCards username={profile?.username} />
-    </DashboardLayout>
+    </>
   )
 }
 
