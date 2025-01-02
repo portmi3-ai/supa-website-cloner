@@ -2,8 +2,10 @@ import { FederalContractsHeader } from "./sections/FederalContractsHeader"
 import { FederalContractsControls } from "./sections/FederalContractsControls"
 import { FederalContractsResults } from "./sections/FederalContractsResults"
 import { useContractsSearch } from "@/hooks/useContractsSearch"
+import { useToast } from "@/hooks/use-toast"
 
 export function FederalContractsContainer() {
+  const { toast } = useToast()
   const {
     searchQuery,
     setSearchQuery,
@@ -25,6 +27,17 @@ export function FederalContractsContainer() {
     error,
   } = useContractsSearch()
 
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch contracts. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [error, toast])
+
   return (
     <div className="container space-y-8 py-8">
       <div className="search-container glow-effect floating">
@@ -41,6 +54,7 @@ export function FederalContractsContainer() {
             onNoticeTypeChange={setNoticeType}
             activeOnly={activeOnly}
             onActiveOnlyChange={setActiveOnly}
+            isLoading={isLoading}
           />
         </div>
       </div>

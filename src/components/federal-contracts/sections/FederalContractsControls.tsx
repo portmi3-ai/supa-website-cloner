@@ -18,6 +18,7 @@ interface FederalContractsControlsProps {
   onNoticeTypeChange: (value: string) => void
   activeOnly: boolean
   onActiveOnlyChange: (value: boolean) => void
+  isLoading?: boolean
 }
 
 export function FederalContractsControls({
@@ -31,10 +32,15 @@ export function FederalContractsControls({
   onNoticeTypeChange,
   activeOnly,
   onActiveOnlyChange,
+  isLoading = false
 }: FederalContractsControlsProps) {
   return (
     <div className="space-y-4">
-      <FederalContractsSearchBar value={searchQuery} onChange={onSearchChange} />
+      <FederalContractsSearchBar 
+        value={searchQuery} 
+        onChange={onSearchChange}
+        isLoading={isLoading} 
+      />
       <FederalContractsFilters
         selectedAgency={selectedAgency}
         onAgencyChange={onAgencyChange}
