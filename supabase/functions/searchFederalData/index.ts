@@ -33,6 +33,7 @@ serve(async (req) => {
       city,
       page,
       limit,
+      timestamp: new Date().toISOString()
     })
 
     const results = await aggregateSearchResults({
@@ -48,8 +49,16 @@ serve(async (req) => {
       limit,
     })
 
+    // Ensure we always return a properly formatted response
+    const response = {
+      data: results || [],
+      totalPages: Math.ceil((results?.length || 0) / (limit || 100)),
+      currentPage: page || 0,
+      totalRecords: results?.length || 0
+    }
+
     return new Response(
-      JSON.stringify(results),
+      JSON.stringify(response),
       {
         headers: {
           ...corsHeaders,
@@ -58,11 +67,20 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error in searchFederalData function:', error)
+    console.error('Error in searchFederalData function:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    })
+
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        message: "Failed to fetch contract data. Please try again later."
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: "Failed to fetch contract data. Please try again later.",
+        data: [],
+        totalPages: 0,
+        currentPage: 0,
+        totalRecords: 0
       }),
       {
         headers: {

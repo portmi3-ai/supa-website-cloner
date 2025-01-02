@@ -17,9 +17,10 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
   console.log('Searching federal opportunities:', params)
   
   try {
-    // Track successful sources
+    // Track successful sources and results
     let successfulSources = 0
     let results: FederalDataResult[] = []
+    let errors: string[] = []
 
     // Fetch from SAM.gov
     try {
@@ -27,16 +28,22 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
         { ...params, page: params.page || 0 }, 
         Deno.env.get('SAM_API_KEY') || ''
       )
-      results = [...results, ...samResults]
-      successfulSources++
-      console.log('SAM.gov fetch successful:', {
-        count: samResults.length,
-        timestamp: new Date().toISOString()
-      })
+      if (samResults && Array.isArray(samResults)) {
+        results = [...results, ...samResults]
+        successfulSources++
+        console.log('SAM.gov fetch successful:', {
+          count: samResults.length,
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        throw new Error('Invalid response format from SAM.gov')
+      }
     } catch (samError) {
+      const errorMessage = samError instanceof Error ? samError.message : 'Unknown error'
+      errors.push(`SAM.gov: ${errorMessage}`)
       console.error('SAM.gov fetch failed:', {
-        error: samError.message,
-        stack: samError.stack,
+        error: errorMessage,
+        stack: samError instanceof Error ? samError.stack : undefined,
         timestamp: new Date().toISOString()
       })
     }
@@ -44,23 +51,29 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     // Fetch from FPDS
     try {
       const fpdsResults = await fetchFPDSData(params)
-      results = [...results, ...fpdsResults]
-      successfulSources++
-      console.log('FPDS fetch successful:', {
-        count: fpdsResults.length,
-        timestamp: new Date().toISOString()
-      })
+      if (fpdsResults && Array.isArray(fpdsResults)) {
+        results = [...results, ...fpdsResults]
+        successfulSources++
+        console.log('FPDS fetch successful:', {
+          count: fpdsResults.length,
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        throw new Error('Invalid response format from FPDS')
+      }
     } catch (fpdsError) {
+      const errorMessage = fpdsError instanceof Error ? fpdsError.message : 'Unknown error'
+      errors.push(`FPDS: ${errorMessage}`)
       console.error('FPDS fetch failed:', {
-        error: fpdsError.message,
-        stack: fpdsError.stack,
+        error: errorMessage,
+        stack: fpdsError instanceof Error ? fpdsError.stack : undefined,
         timestamp: new Date().toISOString()
       })
     }
 
-    // If no sources were successful, throw an error
+    // If no sources were successful, throw an error with details
     if (successfulSources === 0) {
-      throw new Error('Failed to fetch data from all available sources')
+      throw new Error(`Failed to fetch data: ${errors.join('; ')}`)
     }
 
     // Apply search term filter if specified
@@ -92,6 +105,7 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       timestamp: new Date().toISOString()
     })
 
+    // Return properly formatted response
     return {
       data: paginatedResults,
       totalPages,
@@ -100,8 +114,8 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     }
   } catch (error) {
     console.error('Error in searchFederalOpportunities:', {
-      error: error.message,
-      stack: error.stack,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     })
     throw error
