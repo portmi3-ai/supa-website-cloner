@@ -1,105 +1,72 @@
-import { PaginatedResponse, FederalDataResult, SearchParams } from '../types.ts'
-import { fetchSAMData } from './sam.ts'
-import { logError } from '../utils/logging.ts'
-import { sortResults } from '../utils/sorting.ts'
+import { FederalDataResult, SearchParams } from '../types.ts'
+import { withRetry, ApiError } from '../utils/apiRetry.ts'
+import { corsHeaders } from '../cors.ts'
 
-export async function searchFederalOpportunities(params: SearchParams): Promise<PaginatedResponse<FederalDataResult>> {
-  console.log('Searching federal opportunities:', {
-    searchTerm: params.searchTerm,
-    agency: params.agency,
-    startDate: params.startDate,
-    endDate: params.endDate,
-    page: params.page,
-    timestamp: new Date().toISOString()
-  })
-  
+const BASE_URL = 'https://api.sam.gov/opportunities/v2/search'
+
+export async function searchFederalOpportunities(params: SearchParams): Promise<FederalDataResult[]> {
   try {
-    let results: FederalDataResult[] = []
-    let errors: string[] = []
-
-    // Fetch from SAM.gov
-    try {
-      const samApiKey = Deno.env.get('SAM_API_KEY')
-      if (!samApiKey) {
-        console.error('SAM API key is missing')
-        errors.push('SAM.gov: API key is missing')
-      } else {
-        console.log('Fetching from SAM.gov with params:', params)
-        const samResults = await fetchSAMData(params, samApiKey)
-        if (samResults && Array.isArray(samResults)) {
-          results = [...results, ...samResults]
-          console.log('SAM.gov fetch successful:', {
-            count: samResults.length,
-            firstResult: samResults[0],
-            timestamp: new Date().toISOString()
-          })
-        }
-      }
-    } catch (samError) {
-      const errorMessage = samError instanceof Error ? samError.message : 'Unknown error'
-      errors.push(`SAM.gov: ${errorMessage}`)
-      logError('SAM.gov fetch', samError)
-    }
-
-    // Log overall search status
-    console.log('Search status:', {
-      totalErrors: errors.length,
-      errors,
-      resultsCount: results.length,
-      timestamp: new Date().toISOString()
-    })
-
-    if (errors.length > 0) {
-      console.error('Failed to fetch data:', errors)
-      throw new Error(`Failed to fetch data: ${errors.join('; ')}`)
-    }
-
-    // Apply search term filter if provided and not '*'
-    if (params.searchTerm?.trim() && params.searchTerm !== '*') {
-      const searchTermLower = params.searchTerm.toLowerCase().trim()
-      const filteredResults = results.filter(result => 
-        result.title?.toLowerCase().includes(searchTermLower) ||
-        result.description?.toLowerCase().includes(searchTermLower)
-      )
-      console.log('Search term filtering:', {
-        before: results.length,
-        after: filteredResults.length,
-        searchTerm: searchTermLower
-      })
-      results = filteredResults
-    }
-
-    // Sort results if needed
-    if (params.sortField) {
-      results = sortResults(results, params.sortField, params.sortDirection)
-    }
-
-    // Apply pagination
-    const page = params.page || 0
-    const limit = Math.min(params.limit || 100, 100) // Cap at 100 results per page
-    const totalRecords = results.length
-    const totalPages = Math.ceil(totalRecords / limit)
-    const start = page * limit
-    const end = start + limit
+    console.log('Fetching federal opportunities with params:', params)
     
-    const paginatedResults = results.slice(start, end)
+    const apiKey = Deno.env.get("SAM_API_KEY")
+    if (!apiKey) {
+      throw new Error('SAM_API_KEY is not configured')
+    }
 
-    console.log('Final search results:', {
-      total: totalRecords,
-      currentPage: page,
-      totalPages,
-      resultsOnPage: paginatedResults.length,
-      timestamp: new Date().toISOString()
+    // Format dates for the API
+    const today = new Date()
+    const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30))
+    
+    const queryParams = new URLSearchParams({
+      api_key: apiKey,
+      postedFrom: params.startDate || thirtyDaysAgo.toISOString().split('T')[0],
+      postedTo: params.endDate || new Date().toISOString().split('T')[0],
+      limit: String(params.limit || 100),
+      offset: String((params.page || 0) * (params.limit || 100)),
+      ...(params.searchTerm && params.searchTerm !== '*' && { keywords: params.searchTerm }),
+      ...(params.agency && { department: params.agency }),
     })
 
-    return {
-      data: paginatedResults,
-      totalPages,
-      currentPage: page,
-      totalRecords,
-    }
+    const response = await withRetry(async () => {
+      const res = await fetch(`${BASE_URL}?${queryParams.toString()}`, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('SAM API Error:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorText,
+        })
+        throw new ApiError(`SAM API Error: ${res.status} ${res.statusText}`, res.status)
+      }
+
+      return res.json()
+    })
+
+    console.log('SAM API Response:', {
+      totalRecords: response.totalRecords,
+      currentPage: params.page,
+      limit: params.limit,
+    })
+
+    return response.opportunitiesData.map((item: any) => ({
+      id: item.noticeId,
+      title: item.title,
+      agency: item.department,
+      type: item.type,
+      posted_date: item.postedDate,
+      value: item.baseAndAllOptionsValue,
+      response_due: item.responseDeadLine,
+      naics_code: item.naicsCode,
+      set_aside: item.setAside?.[0]?.type || null,
+    }))
   } catch (error) {
-    logError('searchFederalOpportunities', error)
+    console.error('Error in searchFederalOpportunities:', error)
     throw error
   }
 }

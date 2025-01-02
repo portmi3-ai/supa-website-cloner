@@ -3,7 +3,8 @@ export interface SearchParams {
   agency?: string
   startDate?: string
   endDate?: string
-  contractType?: string
+  noticeType?: string
+  activeOnly?: boolean
   page?: number
   limit?: number
   sortField?: string
@@ -13,24 +14,12 @@ export interface SearchParams {
 export interface FederalDataResult {
   id: string
   title: string
-  description?: string
-  funding_agency?: string | null
-  funding_amount?: number | null
-  submission_deadline?: string | null
-  status?: string
-  source: string
-  entity_type?: string | null
-  location?: string | null
-  registration_status?: string | null
-  award_type?: string | null
-  recipient_name?: string | null
-  award_date?: string | null
-  contract_type?: string
-}
-
-export interface PaginatedResponse<T> {
-  data: T[]
-  totalPages: number
-  currentPage: number
-  totalRecords: number
+  agency?: string
+  type?: string
+  posted_date?: string
+  value?: number
+  response_due?: string
+  naics_code?: string
+  set_aside?: string | null
+  source?: string
 }
