@@ -6,6 +6,7 @@ import { Trash2, Search, Calendar, Building2 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from "react-router-dom"
+import { SavedSearch, SavedSearchCriteria } from "@/types/saved-searches.types"
 
 export default function SavedSearches() {
   const { toast } = useToast()
@@ -20,7 +21,7 @@ export default function SavedSearches() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
-      return data
+      return data as SavedSearch[]
     },
   })
 
@@ -46,7 +47,7 @@ export default function SavedSearches() {
     refetch()
   }
 
-  const handleSearch = (searchCriteria: any) => {
+  const handleSearch = (searchCriteria: SavedSearchCriteria) => {
     const queryParams = new URLSearchParams()
     if (searchCriteria.searchTerm) queryParams.set("q", searchCriteria.searchTerm)
     if (searchCriteria.agency) queryParams.set("agency", searchCriteria.agency)
