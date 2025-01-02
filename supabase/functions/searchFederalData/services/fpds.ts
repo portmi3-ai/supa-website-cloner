@@ -13,6 +13,11 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     timestamp: new Date().toISOString()
   })
 
+  if (!validateApiEndpoint(FPDS_API_URL)) {
+    console.error('Invalid FPDS API URL configuration')
+    throw new Error('FPDS API configuration error')
+  }
+
   try {
     // Build query parameters
     const queryParams = new URLSearchParams()
@@ -39,6 +44,16 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     queryParams.append('start', offset.toString())
     queryParams.append('size', '100')
 
+    const paramErrors = validateRequestParams({
+      q: searchQuery,
+      start: offset,
+      size: 100,
+    })
+    
+    if (paramErrors.length > 0) {
+      throw new Error(`Invalid request parameters: ${paramErrors.join(', ')}`)
+    }
+
     const requestUrl = `${FPDS_API_URL}?${queryParams}`
     console.log('FPDS API request URL:', requestUrl)
 
@@ -47,15 +62,20 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       url: requestUrl,
       method: 'GET',
       headers: {
-        'Accept': 'application/xml'
+        'Accept': 'application/xml',
+        'User-Agent': 'ContractSearchApp/1.0'
       },
       timestamp: new Date().toISOString()
     })
 
+    // Add delay to respect rate limits
+    await new Promise(resolve => setTimeout(resolve, getRateLimitDelay()))
+    
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl, {
         headers: {
-          'Accept': 'application/xml'
+          'Accept': 'application/xml',
+          'User-Agent': 'ContractSearchApp/1.0'
         }
       })
       
@@ -72,13 +92,17 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
           statusText: res.statusText,
           headers: Object.fromEntries(res.headers.entries())
         })
-        throw new Error(`FPDS API error: ${res.status}`)
+        const error = new Error(`FPDS API error: ${res.status}`) as ApiError
+        error.status = res.status
+        error.response = res
+        throw error
       }
       return res
     }, {
       maxAttempts: 3,
       initialDelay: 1000,
       maxDelay: 5000,
+      retryableStatuses: [429, 500, 502, 503, 504]
     })
 
     const xmlText = await response.text()
@@ -87,8 +111,16 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       firstChars: xmlText.substring(0, 500),
       containsData: xmlText.includes('<entry>'),
       containsError: xmlText.includes('<error>'),
+      containsTitle: xmlText.includes('<title>'),
       timestamp: new Date().toISOString()
     })
+
+    // Try to extract error message if present
+    const errorMatch = xmlText.match(/<error>(.*?)<\/error>/) || xmlText.match(/<message>(.*?)<\/message>/)
+    if (errorMatch) {
+      console.error('FPDS API returned error in XML:', errorMatch[1])
+      throw new Error(`FPDS API error: ${errorMatch[1]}`)
+    }
 
     // Extract contract data from XML
     const entries = xmlText.match(/<entry>(.*?)<\/entry>/gs) || []
