@@ -24,15 +24,12 @@ const Proposals = () => {
   const [endDate, setEndDate] = useState<Date>()
   const { toast } = useToast()
 
-  // Fetch data from multiple sources
+  // Fetch data from federal sources
   const { data: federalData = [], isLoading: isFederalLoading } = useQuery({
     queryKey: ["federalData", searchQuery, selectedAgency, startDate, endDate],
     queryFn: async () => {
       try {
-        const [grantsResponse, federalResponse, samResponse] = await Promise.all([
-          supabase.functions.invoke("searchGrants", {
-            body: { searchTerm: searchQuery },
-          }),
+        const [federalResponse, samResponse] = await Promise.all([
           supabase.functions.invoke("searchFederalData", {
             body: {
               searchTerm: searchQuery,
@@ -50,18 +47,8 @@ const Proposals = () => {
         ])
 
         // Log responses for debugging
-        console.log('Grants API Response:', grantsResponse)
         console.log('Federal Data Response:', federalResponse)
         console.log('SAM API Response:', samResponse)
-
-        if (grantsResponse.error) {
-          console.error('Grants API Error:', grantsResponse.error)
-          toast({
-            title: "Error fetching grants data",
-            description: "There was an error fetching grants data. Please try again.",
-            variant: "destructive",
-          })
-        }
 
         if (federalResponse.error) {
           console.error('Federal Data Error:', federalResponse.error)
@@ -83,7 +70,6 @@ const Proposals = () => {
 
         // Combine results from all sources, filtering out failed responses
         const combinedResults = [
-          ...(grantsResponse.data || []),
           ...(federalResponse.data || []),
           ...(samResponse.data || []),
         ]
@@ -124,7 +110,7 @@ const Proposals = () => {
     <DashboardLayout>
       <div className="container mx-auto p-6">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h1 className="text-3xl font-bold">Federal Grants & Contracts</h1>
+          <h1 className="text-3xl font-bold">Federal, State & Local Opportunities</h1>
           <div className="w-full md:w-96">
             <ProposalsSearch value={searchQuery} onChange={setSearchQuery} />
           </div>
