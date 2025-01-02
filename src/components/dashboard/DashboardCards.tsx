@@ -2,10 +2,11 @@ import { useAuth } from "@/hooks/useAuth"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
-import { useEffect, useState } from "react"
 import { ProfileCompletionCard } from "./cards/ProfileCompletionCard"
 import { SettingsOverviewCard } from "./cards/SettingsOverviewCard"
 import { RecentActivityCard } from "./cards/RecentActivityCard"
+import { useRecentActivity } from "@/hooks/useRecentActivity"
+import { useProfileCompletion } from "@/hooks/useProfileCompletion"
 
 interface DashboardCardsProps {
   username?: string
@@ -13,7 +14,7 @@ interface DashboardCardsProps {
 
 export function DashboardCards({ username }: DashboardCardsProps) {
   const { user } = useAuth()
-  const [recentActivity, setRecentActivity] = useState<string[]>([])
+  const recentActivity = useRecentActivity(user?.id)
 
   // Fetch user settings
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
@@ -34,71 +35,10 @@ export function DashboardCards({ username }: DashboardCardsProps) {
     enabled: !!user?.id,
   })
 
-  // Calculate profile completion percentage
-  const calculateProfileCompletion = () => {
-    let completed = 0
-    let total = 3 // Total number of profile items to complete
-
-    if (username) completed++
-    if (settings?.email_notifications !== undefined) completed++
-    if (settings?.theme) completed++
-
-    return Math.round((completed / total) * 100)
-  }
-
-  const profileCompletion = calculateProfileCompletion()
-
-  // Get profile completion suggestions
-  const getCompletionSuggestions = () => {
-    const suggestions = []
-    if (!username) suggestions.push("Add a username")
-    if (!settings?.email_notifications) suggestions.push("Enable notifications")
-    if (!settings?.theme) suggestions.push("Set your preferred theme")
-    return suggestions
-  }
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${user?.id}`,
-        },
-        (payload) => {
-          toast.success("Profile updated")
-          setRecentActivity((prev) => [
-            `Profile updated at ${new Date().toLocaleTimeString()}`,
-            ...prev.slice(0, 4),
-          ])
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "settings",
-          filter: `id=eq.${user?.id}`,
-        },
-        (payload) => {
-          toast.success("Settings updated")
-          setRecentActivity((prev) => [
-            `Settings updated at ${new Date().toLocaleTimeString()}`,
-            ...prev.slice(0, 4),
-          ])
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user?.id])
+  const { profileCompletion, completionSuggestions } = useProfileCompletion({
+    username,
+    settings,
+  })
 
   return (
     <div className="container mx-auto p-6">
@@ -110,7 +50,7 @@ export function DashboardCards({ username }: DashboardCardsProps) {
         <ProfileCompletionCard
           username={username}
           profileCompletion={profileCompletion}
-          completionSuggestions={getCompletionSuggestions()}
+          completionSuggestions={completionSuggestions}
         />
         <SettingsOverviewCard
           settings={settings}
