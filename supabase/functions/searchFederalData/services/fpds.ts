@@ -1,5 +1,5 @@
 import { SearchParams, FederalDataResult } from '../types.ts'
-import { withRetry, parseErrorResponse, validateApiEndpoint, validateRequestParams, ApiError } from '../utils/apiRetry.ts'
+import { withRetry, parseErrorResponse, validateApiEndpoint, validateRequestParams, ApiError, getRateLimitDelay } from '../utils/apiRetry.ts'
 
 const FPDS_API_URL = "https://www.fpds.gov/ezsearch/FEEDS/ATOM"
 const CACHE_DURATION = 3600000 // 1 hour in milliseconds
@@ -59,6 +59,9 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       limit: size,
       timestamp: new Date().toISOString(),
     })
+    
+    // Add rate limit delay
+    await new Promise(resolve => setTimeout(resolve, getRateLimitDelay()))
     
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl)

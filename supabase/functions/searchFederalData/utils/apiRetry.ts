@@ -41,6 +41,8 @@ export async function withRetry<T>(
         error,
         timestamp: new Date().toISOString(),
         attempt,
+        status: lastError.status,
+        url: lastError.response?.url,
       });
 
       // Check if we should retry based on error status
@@ -66,18 +68,23 @@ export async function parseErrorResponse(error: any): Promise<string> {
         // Extract error message from HTML if present
         const messageMatch = htmlContent.match(/<error>(.*?)<\/error>/) || 
                            htmlContent.match(/<message>(.*?)<\/message>/) ||
-                           htmlContent.match(/<title>(.*?)<\/title>/);
+                           htmlContent.match(/<title>(.*?)<\/title>/) ||
+                           htmlContent.match(/<h1>(.*?)<\/h1>/);
         if (messageMatch) {
           return messageMatch[1];
         }
         // Store HTML content for debugging
         error.htmlContent = htmlContent;
+        return 'HTML error response received';
       } else if (contentType?.includes('application/json')) {
         const jsonData = await response.json();
         if (jsonData.error || jsonData.message) {
           return jsonData.error || jsonData.message;
         }
+        return JSON.stringify(jsonData);
       }
+      
+      return `HTTP ${response.status}: ${response.statusText}`;
     }
   } catch (parseError) {
     console.error('Error parsing error response:', parseError);
@@ -88,8 +95,8 @@ export async function parseErrorResponse(error: any): Promise<string> {
 
 export function validateApiEndpoint(url: string): boolean {
   try {
-    new URL(url);
-    return true;
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'https:' && parsedUrl.host.length > 0;
   } catch {
     return false;
   }
@@ -115,5 +122,14 @@ export function validateRequestParams(params: Record<string, any>): string[] {
     errors.push('Start parameter must be non-negative');
   }
   
+  if (params.q && typeof params.q !== 'string') {
+    errors.push('Search query must be a string');
+  }
+  
   return errors;
+}
+
+export function getRateLimitDelay(): number {
+  // Implement a simple rate limiting delay
+  return Math.random() * 1000 + 500; // Random delay between 500-1500ms
 }
