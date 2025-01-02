@@ -94,7 +94,7 @@ async function fetchSAMDataPage(params: SearchParams, apiKey: string, page: numb
       return res
     },
     {
-      maxAttempts: 3,
+      maxAttempts: 5,
       initialDelay: 1000,
       maxDelay: 5000,
     }
