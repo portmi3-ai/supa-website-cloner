@@ -34,19 +34,22 @@ export function useFederalContractsSearch(params: SearchParams) {
 
         console.log('RLS Test - Result:', testData ? 'Success' : 'No data', 'Error:', testError)
         
+        // Clean up undefined values and format dates
+        const cleanParams = {
+          searchTerm: params.searchTerm || '*',
+          agency: params.agency === 'all' ? undefined : params.agency,
+          startDate: params.startDate?.toISOString(),
+          endDate: params.endDate?.toISOString(),
+          page: params.page || 0,
+          noticeType: params.noticeType === 'all' ? undefined : params.noticeType,
+          activeOnly: params.activeOnly,
+          sortField: params.sortField,
+          sortDirection: params.sortDirection,
+          limit: 50
+        }
+
         const { data, error } = await supabase.functions.invoke("searchFederalData", {
-          body: {
-            searchTerm: params.searchTerm || '*',
-            agency: params.agency,
-            startDate: params.startDate?.toISOString(),
-            endDate: params.endDate?.toISOString(),
-            page: params.page || 0,
-            noticeType: params.noticeType,
-            activeOnly: params.activeOnly,
-            sortField: params.sortField,
-            sortDirection: params.sortDirection,
-            limit: 50
-          }
+          body: cleanParams
         })
 
         if (error) {
