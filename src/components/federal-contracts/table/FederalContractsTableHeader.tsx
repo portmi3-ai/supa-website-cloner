@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button"
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react"
+import { SortButton } from "./SortButton"
 
 interface FederalContractsTableHeaderProps {
   sortField: string
@@ -13,87 +12,78 @@ export function FederalContractsTableHeader({
   sortDirection,
   onSort,
 }: FederalContractsTableHeaderProps) {
-  const getSortIcon = (field: string) => {
-    if (field !== sortField) return <ArrowUpDown className="ml-2 h-4 w-4" />
-    return sortDirection === "asc" ? (
-      <ChevronUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ChevronDown className="ml-2 h-4 w-4" />
-    )
-  }
-
   return (
     <TableHeader>
       <TableRow>
         <TableHead className="min-w-[400px]">
-          <Button
-            variant="ghost"
-            onClick={() => onSort("title")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="title"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Title
-            {getSortIcon("title")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("agency")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="agency"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Agency
-            {getSortIcon("agency")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("type")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="type"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Type
-            {getSortIcon("type")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("posted_date")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="posted_date"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Posted Date
-            {getSortIcon("posted_date")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("naics_code")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="naics_code"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             NAICS
-            {getSortIcon("naics_code")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("set_aside")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="set_aside"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Set Aside
-            {getSortIcon("set_aside")}
-          </Button>
+          </SortButton>
         </TableHead>
         <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort("response_due")}
-            className="hover:bg-transparent"
+          <SortButton
+            field="response_due"
+            currentSortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
           >
             Response Due
-            {getSortIcon("response_due")}
-          </Button>
+          </SortButton>
         </TableHead>
       </TableRow>
     </TableHeader>
