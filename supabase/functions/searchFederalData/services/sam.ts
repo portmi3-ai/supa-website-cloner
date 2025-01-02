@@ -3,34 +3,45 @@ import { SearchParams, FederalDataResult } from '../types.ts'
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
 
 export async function fetchSAMData(params: SearchParams, apiKey: string): Promise<FederalDataResult[]> {
-  console.log('Fetching SAM.gov data with params:', params)
+  console.log('Fetching SAM.gov data with params:', {
+    hasSearchTerm: !!params.searchTerm,
+    agency: params.agency,
+  })
+
   try {
     if (!apiKey) {
       console.error('SAM API key is missing')
       throw new Error('SAM API key is required')
     }
 
-    // Ensure we have a valid search query, use '*' for empty searches
+    // Ensure search query is valid - if empty or undefined, use '*' as default
     const searchQuery = params.searchTerm?.trim() || '*'
-    const queryParams = new URLSearchParams({
-      api_key: apiKey,
-      q: searchQuery,
-      page: '0',
-      size: '100' // Increased from 10 to get more results
-    })
+    
+    // Validate search query
+    if (searchQuery === '') {
+      console.warn('Empty search query provided, using default "*"')
+    }
 
-    // Add optional parameters if they exist
-    if (params.agency) {
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    queryParams.append('api_key', apiKey)
+    queryParams.append('q', searchQuery)
+    queryParams.append('page', '0')
+    queryParams.append('size', '100')
+
+    // Add optional agency filter if provided
+    if (params.agency && params.agency !== 'all') {
       queryParams.append('organizationId', params.agency)
     }
 
+    const requestUrl = `${SAM_API_URL}?${queryParams}`
     console.log('Making SAM.gov API request:', {
       url: SAM_API_URL,
       query: searchQuery,
-      hasAgency: !!params.agency
+      hasAgency: !!params.agency,
     })
     
-    const response = await fetch(`${SAM_API_URL}?${queryParams}`, {
+    const response = await fetch(requestUrl, {
       headers: {
         'Accept': 'application/json'
       }
@@ -38,13 +49,19 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('SAM.gov API error:', response.status, errorText)
-      throw new Error(`SAM.gov API error: ${response.status} ${response.statusText}`)
+      console.error('SAM.gov API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        requestUrl,
+      })
+      throw new Error(`SAM.gov API error: ${response.status} ${response.statusText}\n${errorText}`)
     }
     
     const data = await response.json()
     console.log('SAM.gov results count:', data.totalRecords || 0)
     
+    // Map API response to FederalDataResult type
     return (data.entities || []).map((entity: any) => ({
       id: entity.ueiSAM || crypto.randomUUID(),
       title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
