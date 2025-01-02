@@ -1,10 +1,10 @@
 import { SearchParams, FederalDataResult } from '../types.ts'
 import { withRetry, parseErrorResponse, validateApiEndpoint, validateRequestParams, ApiError, getRateLimitDelay } from '../utils/apiRetry.ts'
 
-const FPDS_API_URL = "https://api.sam.gov/prod/opportunities/v2/search" // Updated to use SAM.gov API
+const SAM_API_URL = "https://api.sam.gov/opportunities/v2/search"
 
 export async function fetchFPDSData(params: SearchParams): Promise<FederalDataResult[]> {
-  console.log('FPDS Search params:', {
+  console.log('SAM.gov Search params:', {
     searchTerm: params.searchTerm,
     agency: params.agency,
     startDate: params.startDate,
@@ -13,11 +13,6 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     timestamp: new Date().toISOString()
   })
 
-  if (!validateApiEndpoint(FPDS_API_URL)) {
-    console.error('Invalid FPDS API URL configuration')
-    throw new Error('FPDS API configuration error')
-  }
-
   try {
     const apiKey = Deno.env.get('SAM_API_KEY')
     if (!apiKey) {
@@ -25,15 +20,23 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       throw new Error('SAM API key configuration error')
     }
 
+    console.log('Using SAM.gov API with key:', apiKey.substring(0, 4) + '...')
+
     // Build query parameters for SAM.gov API
     const queryParams = new URLSearchParams()
-    const searchQuery = params.searchTerm?.trim() || '*'
-    queryParams.append('keywords', searchQuery)
     
+    // Add keyword search - ensure we're not sending empty strings
+    const searchQuery = params.searchTerm?.trim() || '*'
+    if (searchQuery !== '*') {
+      queryParams.append('keywords', searchQuery)
+    }
+    
+    // Add agency filter if specified
     if (params.agency && params.agency !== 'all') {
       queryParams.append('department', params.agency)
     }
     
+    // Add date filters if specified
     if (params.startDate) {
       queryParams.append('postedFrom', new Date(params.startDate).toISOString().split('T')[0])
     }
@@ -41,34 +44,29 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       queryParams.append('postedTo', new Date(params.endDate).toISOString().split('T')[0])
     }
     
-    // Add pagination
+    // Add pagination - ensure we're getting a good amount of results
     const offset = (params.page || 0) * 100
     queryParams.append('limit', '100')
     queryParams.append('offset', offset.toString())
 
-    const paramErrors = validateRequestParams({
-      keywords: searchQuery,
-      offset,
-      limit: 100,
-    })
-    
-    if (paramErrors.length > 0) {
-      throw new Error(`Invalid request parameters: ${paramErrors.join(', ')}`)
-    }
+    // Add sorting
+    queryParams.append('sortBy', 'relevance')
+    queryParams.append('order', 'desc')
 
-    const requestUrl = `${FPDS_API_URL}?${queryParams}`
+    const requestUrl = `${SAM_API_URL}?${queryParams}`
     console.log('SAM.gov API request URL:', requestUrl)
 
-    // Log the full request details
+    // Log request details
     console.log('SAM.gov API request details:', {
       url: requestUrl,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${apiKey.substring(0, 4)}...`,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'User-Agent': 'ContractSearchApp/1.0'
       },
+      params: Object.fromEntries(queryParams.entries()),
       timestamp: new Date().toISOString()
     })
 
@@ -93,16 +91,16 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       })
 
       if (!res.ok) {
+        const errorText = await res.text()
         console.error('SAM.gov API error response:', {
           status: res.status,
           statusText: res.statusText,
+          error: errorText,
           headers: Object.fromEntries(res.headers.entries())
         })
-        const error = new Error(`SAM.gov API error: ${res.status}`) as ApiError
-        error.status = res.status
-        error.response = res
-        throw error
+        throw new Error(`SAM.gov API error: ${res.status} - ${errorText}`)
       }
+
       return res
     }, {
       maxAttempts: 3,
@@ -111,8 +109,11 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       retryableStatuses: [429, 500, 502, 503, 504]
     })
 
-    const data = await response.json()
-    console.log('SAM.gov API response data:', {
+    const rawData = await response.text()
+    console.log('SAM.gov API raw response:', rawData.substring(0, 500) + '...')
+
+    const data = JSON.parse(rawData)
+    console.log('SAM.gov API parsed response:', {
       totalRecords: data.totalRecords,
       hasData: !!data.opportunitiesData,
       firstResult: data.opportunitiesData?.[0]?.title,
