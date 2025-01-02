@@ -123,6 +123,39 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunity_matches: {
+        Row: {
+          created_at: string | null
+          id: string
+          match_score: number
+          metadata: Json | null
+          opportunity_id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          match_score: number
+          metadata?: Json | null
+          opportunity_id: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          match_score?: number
+          metadata?: Json | null
+          opportunity_id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
