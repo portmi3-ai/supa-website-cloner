@@ -23,21 +23,37 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       fetchFPDSData(params)
     ])
 
-    // Log results from each source
+    // Log results and any errors from each source
     console.log('SAM.gov results:', {
       status: samResults.status,
       count: samResults.status === 'fulfilled' ? samResults.value.length : 0,
+      error: samResults.status === 'rejected' ? samResults.reason : null,
     })
     console.log('FPDS results:', {
       status: fpdsResults.status,
       count: fpdsResults.status === 'fulfilled' ? fpdsResults.value.length : 0,
+      error: fpdsResults.status === 'rejected' ? fpdsResults.reason : null,
     })
 
-    // Combine and filter results
-    let results = [
-      ...(samResults.status === 'fulfilled' ? samResults.value : []),
-      ...(fpdsResults.status === 'fulfilled' ? fpdsResults.value : [])
-    ]
+    // Combine results, handling potential failures
+    let results: FederalDataResult[] = []
+    
+    if (samResults.status === 'fulfilled') {
+      results = [...results, ...samResults.value]
+    } else {
+      console.error('SAM.gov fetch failed:', samResults.reason)
+    }
+    
+    if (fpdsResults.status === 'fulfilled') {
+      results = [...results, ...fpdsResults.value]
+    } else {
+      console.error('FPDS fetch failed:', fpdsResults.reason)
+    }
+
+    // If both sources fail, throw an error
+    if (samResults.status === 'rejected' && fpdsResults.status === 'rejected') {
+      throw new Error('Failed to fetch data from all available sources')
+    }
 
     // Apply search term filter if specified
     if (params.searchTerm?.trim()) {
@@ -64,6 +80,8 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       currentPage: page,
       totalPages,
       resultsOnPage: paginatedResults.length,
+      samSuccess: samResults.status === 'fulfilled',
+      fpdsSuccess: fpdsResults.status === 'fulfilled',
     })
 
     return {
@@ -74,11 +92,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     }
   } catch (error) {
     console.error('Error in searchFederalOpportunities:', error)
-    return {
-      data: [],
-      totalPages: 0,
-      currentPage: 0,
-      totalRecords: 0,
-    }
+    throw error
   }
 }
