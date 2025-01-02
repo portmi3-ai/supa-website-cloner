@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ContractStatus } from "@/types/contracts.types"
+import { motion } from "framer-motion"
 
 interface ContractsFilterProps {
   selectedStatus: ContractStatus | "all"
@@ -23,18 +24,26 @@ export function ContractsFilter({
   return (
     <div className="flex flex-wrap gap-2">
       {CONTRACT_STATUSES.map((status) => (
-        <Button
+        <motion.div
           key={status}
-          variant={selectedStatus === status ? "default" : "outline"}
-          size="sm"
-          onClick={() => onStatusChange(status)}
-          className="capitalize"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          {status}
-          <Badge variant="secondary" className="ml-2">
-            {status === "all" ? "All" : status.charAt(0).toUpperCase()}
-          </Badge>
-        </Button>
+          <Button
+            variant={selectedStatus === status ? "default" : "outline"}
+            size="sm"
+            onClick={() => onStatusChange(status)}
+            className="capitalize transition-all duration-200"
+          >
+            {status}
+            <Badge 
+              variant="secondary" 
+              className="ml-2 transition-colors"
+            >
+              {status === "all" ? "All" : status.charAt(0).toUpperCase()}
+            </Badge>
+          </Button>
+        </motion.div>
       ))}
     </div>
   )
