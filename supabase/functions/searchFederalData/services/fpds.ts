@@ -35,9 +35,9 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     }
     
     // Add pagination
-    const offset = (params.page || 0) * 10
+    const offset = (params.page || 0) * 100 // Updated to fetch 100 results
     queryParams.append('start', offset.toString())
-    queryParams.append('size', '10')
+    queryParams.append('size', '100') // Updated to fetch 100 results
 
     const requestUrl = `${FPDS_API_URL}?${queryParams}`
     console.log('FPDS API request URL:', requestUrl)
@@ -45,6 +45,10 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl)
       if (!res.ok) {
+        console.error('FPDS API error response:', {
+          status: res.status,
+          statusText: res.statusText
+        })
         throw new Error(`FPDS API error: ${res.status}`)
       }
       return res
@@ -55,45 +59,66 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     })
 
     const xmlText = await response.text()
-    console.log('FPDS Raw response:', xmlText.substring(0, 500)) // Log first 500 chars of response
+    console.log('FPDS Raw XML response length:', xmlText.length)
+    console.log('FPDS Raw XML first 500 chars:', xmlText.substring(0, 500))
 
     // Extract contract data from XML
     const titleMatches = xmlText.match(/<title>(.*?)<\/title>/g) || []
     const descMatches = xmlText.match(/<summary.*?>(.*?)<\/summary>/g) || []
     const dateMatches = xmlText.match(/<updated>(.*?)<\/updated>/g) || []
 
-    console.log('FPDS Matches found:', {
-      titles: titleMatches.length,
-      descriptions: descMatches.length,
-      dates: dateMatches.length
+    console.log('FPDS XML parsing results:', {
+      titleMatches: titleMatches.length,
+      descMatches: descMatches.length,
+      dateMatches: dateMatches.length,
+      firstTitle: titleMatches[0]?.replace(/<\/?title>/g, '').trim(),
+      timestamp: new Date().toISOString()
     })
 
     // Transform matches into contract data
-    const results: FederalDataResult[] = titleMatches.map((title, index) => ({
-      id: crypto.randomUUID(),
-      title: title.replace(/<\/?title>/g, '').trim(),
-      description: descMatches[index] 
-        ? descMatches[index].replace(/<summary.*?>(.*?)<\/summary>/g, '$1').trim()
-        : '',
-      agency: params.agency || 'Unknown',
-      type: 'Contract',
-      posted_date: dateMatches[index]
-        ? dateMatches[index].replace(/<\/?updated>/g, '').trim()
-        : new Date().toISOString(),
-      value: 0,
-      response_due: null,
-      naics_code: null,
-      set_aside: null
-    }))
+    const results: FederalDataResult[] = titleMatches.map((title, index) => {
+      const contractData = {
+        id: crypto.randomUUID(),
+        title: title.replace(/<\/?title>/g, '').trim(),
+        description: descMatches[index] 
+          ? descMatches[index].replace(/<summary.*?>(.*?)<\/summary>/g, '$1').trim()
+          : '',
+        agency: params.agency || 'Unknown',
+        type: 'Contract',
+        posted_date: dateMatches[index]
+          ? dateMatches[index].replace(/<\/?updated>/g, '').trim()
+          : new Date().toISOString(),
+        value: 0,
+        response_due: null,
+        naics_code: null,
+        set_aside: null
+      };
 
-    console.log('FPDS Transformed results:', {
+      console.log('FPDS Transformed contract:', {
+        id: contractData.id,
+        title: contractData.title.substring(0, 50) + '...',
+        timestamp: new Date().toISOString()
+      });
+
+      return contractData;
+    })
+
+    console.log('FPDS Final results:', {
       count: results.length,
-      firstResult: results[0] || null
+      firstResult: results[0] ? {
+        id: results[0].id,
+        title: results[0].title.substring(0, 50) + '...'
+      } : null,
+      timestamp: new Date().toISOString()
     })
 
     return results
   } catch (error) {
-    console.error('FPDS fetch error:', error)
+    console.error('FPDS fetch error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }
