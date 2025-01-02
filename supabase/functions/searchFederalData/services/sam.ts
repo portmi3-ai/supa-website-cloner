@@ -1,5 +1,5 @@
-import { SearchParams } from '../types.ts'
-import { corsHeaders } from '../cors.ts'
+import { SearchParams } from '../types'
+import { corsHeaders } from '../cors'
 
 const SAM_API_URL = 'https://api.sam.gov/entity-information/v3/entities'
 
@@ -29,7 +29,7 @@ function buildQueryParams(params: SearchParams): URLSearchParams {
 
   // Optional filters
   if (params.agency) {
-    queryParams.append('deptname', params.agency)
+    queryParams.append('agencyCode', params.agency)
   }
 
   // Date range filters
@@ -44,6 +44,12 @@ function buildQueryParams(params: SearchParams): URLSearchParams {
   queryParams.append('page', (params.page || 0).toString())
   queryParams.append('size', '100') // Request maximum allowed results
 
+  // Add API key as query parameter for beta endpoint
+  const apiKey = Deno.env.get('SAM_API_KEY')
+  if (apiKey) {
+    queryParams.append('api_key', apiKey)
+  }
+
   return queryParams
 }
 
@@ -54,7 +60,6 @@ async function makeApiRequest(url: string, apiKey: string): Promise<Response> {
     const headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'X-API-Key': apiKey,
       ...corsHeaders
     }
 
