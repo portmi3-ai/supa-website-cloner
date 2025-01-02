@@ -17,41 +17,49 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
   console.log('Searching federal opportunities:', params)
   
   try {
-    // Fetch from multiple federal sources in parallel
-    const [samResults, fpdsResults] = await Promise.allSettled([
-      fetchSAMData({ ...params, page: params.page || 0 }, Deno.env.get('SAM_API_KEY') || ''),
-      fetchFPDSData(params)
-    ])
-
-    // Log results and any errors from each source
-    console.log('SAM.gov results:', {
-      status: samResults.status,
-      count: samResults.status === 'fulfilled' ? samResults.value.length : 0,
-      error: samResults.status === 'rejected' ? samResults.reason : null,
-    })
-    console.log('FPDS results:', {
-      status: fpdsResults.status,
-      count: fpdsResults.status === 'fulfilled' ? fpdsResults.value.length : 0,
-      error: fpdsResults.status === 'rejected' ? fpdsResults.reason : null,
-    })
-
-    // Combine results, handling potential failures
+    // Track successful sources
+    let successfulSources = 0
     let results: FederalDataResult[] = []
-    
-    if (samResults.status === 'fulfilled') {
-      results = [...results, ...samResults.value]
-    } else {
-      console.error('SAM.gov fetch failed:', samResults.reason)
-    }
-    
-    if (fpdsResults.status === 'fulfilled') {
-      results = [...results, ...fpdsResults.value]
-    } else {
-      console.error('FPDS fetch failed:', fpdsResults.reason)
+
+    // Fetch from SAM.gov
+    try {
+      const samResults = await fetchSAMData(
+        { ...params, page: params.page || 0 }, 
+        Deno.env.get('SAM_API_KEY') || ''
+      )
+      results = [...results, ...samResults]
+      successfulSources++
+      console.log('SAM.gov fetch successful:', {
+        count: samResults.length,
+        timestamp: new Date().toISOString()
+      })
+    } catch (samError) {
+      console.error('SAM.gov fetch failed:', {
+        error: samError.message,
+        stack: samError.stack,
+        timestamp: new Date().toISOString()
+      })
     }
 
-    // If both sources fail, throw an error
-    if (samResults.status === 'rejected' && fpdsResults.status === 'rejected') {
+    // Fetch from FPDS
+    try {
+      const fpdsResults = await fetchFPDSData(params)
+      results = [...results, ...fpdsResults]
+      successfulSources++
+      console.log('FPDS fetch successful:', {
+        count: fpdsResults.length,
+        timestamp: new Date().toISOString()
+      })
+    } catch (fpdsError) {
+      console.error('FPDS fetch failed:', {
+        error: fpdsError.message,
+        stack: fpdsError.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    // If no sources were successful, throw an error
+    if (successfulSources === 0) {
       throw new Error('Failed to fetch data from all available sources')
     }
 
@@ -80,8 +88,8 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       currentPage: page,
       totalPages,
       resultsOnPage: paginatedResults.length,
-      samSuccess: samResults.status === 'fulfilled',
-      fpdsSuccess: fpdsResults.status === 'fulfilled',
+      successfulSources,
+      timestamp: new Date().toISOString()
     })
 
     return {
@@ -91,7 +99,11 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       totalRecords,
     }
   } catch (error) {
-    console.error('Error in searchFederalOpportunities:', error)
+    console.error('Error in searchFederalOpportunities:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }
