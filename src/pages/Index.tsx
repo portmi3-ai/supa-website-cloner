@@ -1,5 +1,5 @@
-import { useAuth } from "@/App"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useAuth } from "@/hooks/useAuth"
+import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardCards } from "@/components/dashboard/DashboardCards"

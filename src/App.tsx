@@ -8,6 +8,9 @@ import Notifications from "@/pages/Notifications"
 import Profile from "@/pages/Profile"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { useAuth } from "@/hooks/useAuth"
+
+export { useAuth }
 
 const router = createBrowserRouter([
   {

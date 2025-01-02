@@ -1,15 +1,12 @@
-import { useAuth } from "@/App"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useAuth } from "@/hooks/useAuth"
+import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
-import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
 
 const Settings = () => {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
 
   // Fetch user settings
   const { data: settings, isLoading } = useQuery({
@@ -25,32 +22,9 @@ const Settings = () => {
         toast.error("Error fetching settings")
         throw error
       }
-
       return data
     },
     enabled: !!user?.id,
-  })
-
-  // Update settings mutation
-  const updateSettings = useMutation({
-    mutationFn: async (newSettings: {
-      email_notifications?: boolean
-      theme?: "light" | "dark"
-    }) => {
-      const { error } = await supabase
-        .from("settings")
-        .update(newSettings)
-        .eq("id", user?.id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["settings", user?.id] })
-      toast.success("Settings updated successfully")
-    },
-    onError: () => {
-      toast.error("Failed to update settings")
-    },
   })
 
   if (isLoading) {
@@ -65,60 +39,21 @@ const Settings = () => {
 
   return (
     <DashboardLayout>
-      <div className="container max-w-2xl py-8">
-        <h1 className="text-3xl font-bold mb-8">Settings</h1>
-
-        <div className="space-y-8">
-          {/* Email Notifications */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium">Email Notifications</h3>
-              <p className="text-sm text-muted-foreground">
-                Receive email notifications about important updates
-              </p>
-            </div>
-            <Switch
-              checked={settings?.email_notifications}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ email_notifications: checked })
-              }
-            />
+      <TopBar username={user?.email} />
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">Settings</h1>
+        <div className="grid gap-6">
+          <div className="rounded-lg border p-4">
+            <h2 className="text-lg font-semibold">Email Notifications</h2>
+            <p className="text-sm text-gray-500">
+              {settings?.email_notifications ? "Enabled" : "Disabled"}
+            </p>
           </div>
-
-          {/* Theme Selection */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Theme</h3>
-              <p className="text-sm text-muted-foreground">
-                Choose your preferred theme
-              </p>
-            </div>
-            <RadioGroup
-              value={settings?.theme}
-              onValueChange={(value) =>
-                updateSettings.mutate({ theme: value as "light" | "dark" })
-              }
-              className="grid grid-cols-2 gap-4"
-            >
-              <div>
-                <RadioGroupItem value="light" id="light" className="peer sr-only" />
-                <Label
-                  htmlFor="light"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-background p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                >
-                  <span>Light</span>
-                </Label>
-              </div>
-              <div>
-                <RadioGroupItem value="dark" id="dark" className="peer sr-only" />
-                <Label
-                  htmlFor="dark"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-background p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                >
-                  <span>Dark</span>
-                </Label>
-              </div>
-            </RadioGroup>
+          <div className="rounded-lg border p-4">
+            <h2 className="text-lg font-semibold">Theme</h2>
+            <p className="text-sm text-gray-500">
+              {settings?.theme || "Not set"}
+            </p>
           </div>
         </div>
       </div>
