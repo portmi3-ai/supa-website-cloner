@@ -20,7 +20,7 @@ export function useContractsSearch() {
 
   // Clean up undefined values and format dates
   const cleanParams = {
-    searchTerm: searchQuery || undefined,
+    searchTerm: searchQuery || '*', // Always provide a search term, use '*' as default
     agency: selectedAgency === "all" ? undefined : selectedAgency,
     startDate: dateRange.from,
     endDate: dateRange.to,

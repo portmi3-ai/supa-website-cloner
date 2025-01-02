@@ -16,22 +16,19 @@ serve(async (req) => {
     const params = await req.json()
     logSearchParameters(params)
 
-    // Validate required parameters
-    if (!params.searchTerm) {
-      throw new Error('Search term is required')
-    }
-
-    // Clean up parameters
+    // Validate and clean up search parameters
     const cleanParams = {
-      searchTerm: params.searchTerm,
-      agency: params.agency || undefined,
-      startDate: params.startDate || undefined,
-      endDate: params.endDate || undefined,
-      noticeType: params.noticeType || undefined,
+      searchTerm: params.searchTerm || '*', // Use '*' as default if not provided
+      agency: params.agency,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      noticeType: params.noticeType,
       activeOnly: params.activeOnly ?? true,
       page: params.page || 0,
       limit: Math.min(params.limit || 50, 100), // Cap at 100 results per page
     }
+
+    console.log('Cleaned search parameters:', cleanParams)
 
     const results = await aggregateSearchResults(cleanParams)
 
