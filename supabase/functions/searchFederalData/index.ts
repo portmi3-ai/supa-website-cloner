@@ -50,7 +50,8 @@ serve(async (req) => {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Api-Key': apiKey
+        'X-Api-Key': apiKey,
+        'apikey': apiKey  // Adding the apikey header as required by SAM.gov
       }
     })
 
