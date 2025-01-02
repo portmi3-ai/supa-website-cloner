@@ -1,6 +1,5 @@
 import { PaginatedResponse, FederalDataResult, SearchParams } from '../types.ts'
 import { fetchSAMData } from './sam.ts'
-import { fetchFPDSData } from './fpds.ts'
 import { logError } from '../utils/logging.ts'
 import { sortResults } from '../utils/sorting.ts'
 
@@ -15,7 +14,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
   })
   
   try {
-    let successfulSources = 0
     let results: FederalDataResult[] = []
     let errors: string[] = []
 
@@ -30,7 +28,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
         const samResults = await fetchSAMData(params, samApiKey)
         if (samResults && Array.isArray(samResults)) {
           results = [...results, ...samResults]
-          successfulSources++
           console.log('SAM.gov fetch successful:', {
             count: samResults.length,
             firstResult: samResults[0],
@@ -44,37 +41,17 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       logError('SAM.gov fetch', samError)
     }
 
-    // Fetch from FPDS
-    try {
-      console.log('Fetching from FPDS with params:', params)
-      const fpdsResults = await fetchFPDSData(params)
-      if (fpdsResults && Array.isArray(fpdsResults)) {
-        results = [...results, ...fpdsResults]
-        successfulSources++
-        console.log('FPDS fetch successful:', {
-          count: fpdsResults.length,
-          firstResult: fpdsResults[0],
-          timestamp: new Date().toISOString()
-        })
-      }
-    } catch (fpdsError) {
-      const errorMessage = fpdsError instanceof Error ? fpdsError.message : 'Unknown error'
-      errors.push(`FPDS: ${errorMessage}`)
-      logError('FPDS fetch', fpdsError)
-    }
-
     // Log overall search status
     console.log('Search status:', {
-      successfulSources,
       totalErrors: errors.length,
       errors,
       resultsCount: results.length,
       timestamp: new Date().toISOString()
     })
 
-    if (successfulSources === 0 && errors.length > 0) {
-      console.error('Failed to fetch data from all sources:', errors)
-      throw new Error(`Failed to fetch data from all available sources: ${errors.join('; ')}`)
+    if (errors.length > 0) {
+      console.error('Failed to fetch data:', errors)
+      throw new Error(`Failed to fetch data: ${errors.join('; ')}`)
     }
 
     // Apply search term filter if provided and not '*'
@@ -112,7 +89,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       currentPage: page,
       totalPages,
       resultsOnPage: paginatedResults.length,
-      successfulSources,
       timestamp: new Date().toISOString()
     })
 
