@@ -33,7 +33,9 @@ export async function withRetry<T>(
           config.initialDelay * Math.pow(2, attempt - 1),
           config.maxDelay
         )
-        console.log(`Retry attempt ${attempt}, waiting ${delay}ms`)
+        console.log(`Retry attempt ${attempt}, waiting ${delay}ms`, {
+          timestamp: new Date().toISOString()
+        })
         await new Promise(resolve => setTimeout(resolve, delay))
       }
 
@@ -44,6 +46,7 @@ export async function withRetry<T>(
         error: lastError.message,
         status: lastError.status,
         attempt,
+        timestamp: new Date().toISOString()
       })
 
       const shouldRetry = config.retryableStatuses?.includes(lastError.status || 0)

@@ -6,10 +6,14 @@ const BASE_URL = 'https://api.sam.gov/opportunities/v2/search'
 
 export async function searchFederalOpportunities(params: SearchParams): Promise<FederalDataResult[]> {
   try {
-    console.log('Fetching federal opportunities with params:', params)
+    console.log('Fetching federal opportunities with params:', {
+      ...params,
+      timestamp: new Date().toISOString()
+    })
     
     const apiKey = Deno.env.get("SAM_API_KEY")
     if (!apiKey) {
+      console.error('SAM.gov API key configuration error')
       throw new Error('SAM_API_KEY is not configured')
     }
 
@@ -27,11 +31,18 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       ...(params.agency && { department: params.agency }),
     })
 
+    const requestUrl = `${BASE_URL}?${queryParams.toString()}`
+    console.log('Making SAM.gov API request:', {
+      url: requestUrl,
+      timestamp: new Date().toISOString()
+    })
+
     const response = await withRetry(async () => {
-      const res = await fetch(`${BASE_URL}?${queryParams.toString()}`, {
+      const res = await fetch(requestUrl, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
       })
 
@@ -41,17 +52,33 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
           status: res.status,
           statusText: res.statusText,
           error: errorText,
+          timestamp: new Date().toISOString()
         })
         throw new ApiError(`SAM API Error: ${res.status} ${res.statusText}`, res.status)
       }
 
-      return res.json()
+      const data = await res.json()
+      if (!data || !data.opportunitiesData) {
+        console.error('Invalid API response format:', {
+          data,
+          timestamp: new Date().toISOString()
+        })
+        throw new Error('Invalid API response format')
+      }
+
+      return data
+    }, {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      retryableStatuses: [429, 500, 502, 503, 504]
     })
 
     console.log('SAM API Response:', {
       totalRecords: response.totalRecords,
       currentPage: params.page,
       limit: params.limit,
+      timestamp: new Date().toISOString()
     })
 
     return response.opportunitiesData.map((item: any) => ({
@@ -64,9 +91,14 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       response_due: item.responseDeadLine,
       naics_code: item.naicsCode,
       set_aside: item.setAside?.[0]?.type || null,
+      source: 'sam.gov'
     }))
   } catch (error) {
-    console.error('Error in searchFederalOpportunities:', error)
+    console.error('Error in searchFederalOpportunities:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }

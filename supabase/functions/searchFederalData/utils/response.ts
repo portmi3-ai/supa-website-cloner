@@ -35,7 +35,7 @@ export const createErrorResponse = (error: unknown) => {
         ...corsHeaders,
         'Content-Type': 'application/json',
       },
-      status: 500,
+      status: error instanceof ApiError ? error.status || 500 : 500,
     }
   )
 }
