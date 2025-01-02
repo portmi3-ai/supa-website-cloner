@@ -58,9 +58,9 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       url: requestUrl,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Api-Key': '[REDACTED]'
       },
       params: Object.fromEntries(queryParams.entries()),
       timestamp: new Date().toISOString()
@@ -72,10 +72,9 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl, {
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'api_key': apiKey
+          'X-Api-Key': apiKey
         }
       })
       
