@@ -15,16 +15,15 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
 
   try {
     const queryParams = new URLSearchParams()
-    queryParams.append('api_key', apiKey)
     
-    // Add keyword search
-    if (params.searchTerm?.trim()) {
-      queryParams.append('keywords', params.searchTerm.trim())
+    // Add keyword search using qterm instead of keywords
+    if (params.searchTerm?.trim() && params.searchTerm !== '*') {
+      queryParams.append('qterm', params.searchTerm.trim())
     }
 
-    // Add agency filter
+    // Add agency filter using deptname instead of department
     if (params.agency && params.agency !== 'all') {
-      queryParams.append('department', params.agency)
+      queryParams.append('deptname', params.agency)
     }
 
     // Add date filters
@@ -37,7 +36,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
 
     // Add pagination
     queryParams.append('page', (params.page || 0).toString())
-    queryParams.append('limit', '10')
+    queryParams.append('size', '100') // Request maximum allowed results
 
     const requestUrl = `${SAM_API_URL}?${queryParams}`
     console.log('SAM.gov API request URL:', requestUrl)
@@ -46,7 +45,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       const res = await fetch(requestUrl, {
         headers: {
           'Accept': 'application/json',
-          'X-Api-Key': apiKey
+          'X-Api-Key': apiKey,
         }
       })
 
@@ -55,7 +54,8 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
         console.error('SAM.gov API error:', {
           status: res.status,
           statusText: res.statusText,
-          error: errorText
+          error: errorText,
+          headers: Object.fromEntries(res.headers.entries())
         })
         throw new Error(`SAM.gov API error: ${res.status} ${errorText}`)
       }
@@ -66,15 +66,21 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     const data = await response.json()
     console.log('SAM.gov Raw response:', {
       opportunitiesCount: data.opportunitiesData?.length || 0,
-      totalRecords: data.totalRecords || 0
+      totalRecords: data.totalRecords || 0,
+      metadata: data.metadata || {}
     })
 
-    const results = (data.opportunitiesData || []).map((opp: any) => ({
+    if (!data.opportunitiesData) {
+      console.warn('No opportunities data in response:', data)
+      return []
+    }
+
+    const results = data.opportunitiesData.map((opp: any) => ({
       id: opp.noticeId || crypto.randomUUID(),
       title: opp.title || 'Untitled Opportunity',
       description: opp.description || '',
-      agency: opp.department || params.agency || null,
-      type: opp.noticeType || 'Unknown',
+      agency: opp.departmentName || params.agency || null,
+      type: opp.type || 'Unknown',
       posted_date: opp.postedDate || null,
       value: opp.baseAndAllOptionsValue || null,
       response_due: opp.responseDeadLine || null,
@@ -84,7 +90,8 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
 
     console.log('SAM.gov Transformed results:', {
       count: results.length,
-      firstResult: results[0] || null
+      firstResult: results[0] || null,
+      timestamp: new Date().toISOString()
     })
 
     return results
