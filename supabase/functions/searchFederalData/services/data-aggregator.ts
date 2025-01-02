@@ -18,28 +18,65 @@ export async function aggregateSearchResults(params: {
     // Fetch from all sources in parallel
     const [federalResults, stateResults, localResults] = await Promise.all([
       searchFederalOpportunities(params),
-      searchStateOpportunities({ 
+      params.state ? searchStateOpportunities({ 
         searchTerm: params.searchTerm,
         state: params.state 
-      }),
-      searchLocalOpportunities({
+      }) : [],
+      (params.state || params.city) ? searchLocalOpportunities({
         searchTerm: params.searchTerm,
         state: params.state,
         city: params.city
-      })
+      }) : []
     ])
 
-    // Combine and deduplicate results
-    const allResults = [
+    // Apply filters to combined results
+    let allResults = [
       ...(federalResults || []),
       ...(stateResults || []),
       ...(localResults || [])
     ]
 
-    console.log(`Found ${allResults.length} total results:`, {
+    // Apply agency filter if specified
+    if (params.agency && params.agency !== 'all') {
+      allResults = allResults.filter(result => 
+        result.agency?.toLowerCase().includes(params.agency?.toLowerCase() || '')
+      )
+    }
+
+    // Apply date range filters if specified
+    if (params.startDate) {
+      const startDate = new Date(params.startDate)
+      allResults = allResults.filter(result => 
+        result.posted_date ? new Date(result.posted_date) >= startDate : true
+      )
+    }
+
+    if (params.endDate) {
+      const endDate = new Date(params.endDate)
+      allResults = allResults.filter(result => 
+        result.posted_date ? new Date(result.posted_date) <= endDate : true
+      )
+    }
+
+    // Apply notice type filter if specified
+    if (params.noticeType && params.noticeType !== 'all') {
+      allResults = allResults.filter(result => 
+        result.type?.toLowerCase() === params.noticeType?.toLowerCase()
+      )
+    }
+
+    // Apply active only filter
+    if (params.activeOnly) {
+      allResults = allResults.filter(result => 
+        result.status?.toLowerCase() === 'active'
+      )
+    }
+
+    console.log(`Found ${allResults.length} total results after filtering:`, {
       federal: federalResults?.length || 0,
       state: stateResults?.length || 0,
-      local: localResults?.length || 0
+      local: localResults?.length || 0,
+      filtered: allResults.length
     })
 
     return allResults
