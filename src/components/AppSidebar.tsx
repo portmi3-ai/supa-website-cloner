@@ -1,27 +1,44 @@
-import { Home, FileText, Search, Users, Settings, Bell } from "lucide-react"
-import { Sidebar, SidebarGroup, SidebarItem, SidebarMenu } from "@/components/ui/sidebar"
+import { Home, FileText, Search, Users, Settings } from "lucide-react"
+import { Sidebar, SidebarGroup, SidebarMenu } from "@/components/ui/sidebar"
 import { NotificationButton } from "@/components/notifications/NotificationButton"
+import { Link } from "react-router-dom"
+import { Button } from "@/components/ui/button"
 
 export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarGroup>
         <SidebarMenu>
-          <SidebarItem href="/" icon={Home}>
-            Dashboard
-          </SidebarItem>
-          <SidebarItem href="/contracts" icon={FileText}>
-            Contracts
-          </SidebarItem>
-          <SidebarItem href="/federal-contracts/search" icon={Search}>
-            Federal Contracts Search
-          </SidebarItem>
-          <SidebarItem href="/team" icon={Users}>
-            Team
-          </SidebarItem>
-          <SidebarItem href="/settings" icon={Settings}>
-            Settings
-          </SidebarItem>
+          <Link to="/">
+            <Button variant="ghost" className="w-full justify-start">
+              <Home className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link to="/contracts">
+            <Button variant="ghost" className="w-full justify-start">
+              <FileText className="mr-2 h-4 w-4" />
+              Contracts
+            </Button>
+          </Link>
+          <Link to="/federal-contracts/search">
+            <Button variant="ghost" className="w-full justify-start">
+              <Search className="mr-2 h-4 w-4" />
+              Federal Contracts Search
+            </Button>
+          </Link>
+          <Link to="/team">
+            <Button variant="ghost" className="w-full justify-start">
+              <Users className="mr-2 h-4 w-4" />
+              Team
+            </Button>
+          </Link>
+          <Link to="/settings">
+            <Button variant="ghost" className="w-full justify-start">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Button>
+          </Link>
         </SidebarMenu>
       </SidebarGroup>
       <SidebarGroup className="mt-auto">
