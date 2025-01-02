@@ -1,14 +1,11 @@
-import { corsHeaders } from '../cors.ts'
+import { corsHeaders } from '../../_shared/cors.ts'
 import { ApiError } from './apiRetry.ts'
 
 export const createSuccessResponse = (data: any) => {
   return new Response(
     JSON.stringify(data),
     {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
+      headers: corsHeaders,
       status: 200,
     }
   )
@@ -37,10 +34,7 @@ export const createErrorResponse = (error: unknown) => {
       totalRecords: 0
     }),
     {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
+      headers: corsHeaders,
       status: 200, // Always return 200 to prevent Supabase from retrying
     }
   )

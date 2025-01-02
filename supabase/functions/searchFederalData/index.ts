@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from './cors.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 import { aggregateSearchResults } from './services/data-aggregator.ts'
 import { logSearchParameters, logSearchResponse } from './utils/logging.ts'
 import { createSuccessResponse, createErrorResponse } from './utils/response.ts'
@@ -8,7 +8,13 @@ import { withRetry } from './utils/apiRetry.ts'
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Max-Age': '86400',
+      } 
+    })
   }
 
   try {
