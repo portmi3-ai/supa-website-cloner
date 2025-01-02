@@ -68,7 +68,6 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
         'Authorization': `Bearer ${apiKey.substring(0, 4)}...`,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'User-Agent': 'ContractSearchApp/1.0'
       },
       params: Object.fromEntries(queryParams.entries()),
       timestamp: new Date().toISOString()
@@ -114,18 +113,31 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     })
 
     const rawData = await response.text()
-    console.log('SAM.gov API raw response:', rawData.substring(0, 500) + '...')
+    console.log('SAM.gov API raw response:', rawData)
 
-    const data = JSON.parse(rawData)
-    console.log('SAM.gov API parsed response:', {
-      totalRecords: data.totalRecords,
-      hasData: !!data.opportunitiesData,
-      firstResult: data.opportunitiesData?.[0]?.title,
-      timestamp: new Date().toISOString()
-    })
+    let data
+    try {
+      data = JSON.parse(rawData)
+      console.log('SAM.gov API parsed response:', {
+        totalRecords: data.totalRecords,
+        hasData: !!data.opportunitiesData,
+        firstResult: data.opportunitiesData?.[0]?.title,
+        timestamp: new Date().toISOString()
+      })
+    } catch (parseError) {
+      console.error('Error parsing SAM.gov API response:', {
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
+        rawData: rawData.substring(0, 1000) + '...',
+        timestamp: new Date().toISOString()
+      })
+      throw new Error('Failed to parse SAM.gov API response')
+    }
 
     if (!data.opportunitiesData) {
-      console.warn('No opportunities data in response')
+      console.warn('No opportunities data in response:', {
+        responseKeys: Object.keys(data),
+        timestamp: new Date().toISOString()
+      })
       return []
     }
 
