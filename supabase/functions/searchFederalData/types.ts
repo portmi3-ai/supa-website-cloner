@@ -25,3 +25,10 @@ export interface FederalDataResult {
   award_date?: string | null
   contract_type?: string
 }
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  totalPages: number
+  currentPage: number
+  totalRecords: number
+}

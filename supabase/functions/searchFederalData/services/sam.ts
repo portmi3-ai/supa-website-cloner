@@ -6,6 +6,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
   console.log('Fetching SAM.gov data with params:', {
     hasSearchTerm: !!params.searchTerm,
     agency: params.agency,
+    page: params.page || 0,
   })
 
   try {
@@ -22,8 +23,11 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     const searchQuery = params.searchTerm?.trim() || '*'
     queryParams.append('q', searchQuery)
     
-    queryParams.append('page', '0')
-    queryParams.append('size', '100')
+    // Add pagination parameters
+    const page = params.page || 0
+    const limit = 100 // Maximum allowed by SAM.gov
+    queryParams.append('page', page.toString())
+    queryParams.append('size', limit.toString())
 
     // Add optional agency filter if provided
     if (params.agency && params.agency !== 'all') {
@@ -35,6 +39,8 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       url: SAM_API_URL,
       query: searchQuery,
       hasAgency: !!params.agency,
+      page,
+      limit,
     })
     
     const response = await fetch(requestUrl, {

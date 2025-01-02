@@ -17,7 +17,9 @@ serve(async (req) => {
       noticeType,
       activeOnly,
       state,
-      city
+      city,
+      page = 0,
+      limit = 100,
     } = await req.json()
 
     console.log('Received search request:', {
@@ -28,7 +30,9 @@ serve(async (req) => {
       noticeType,
       activeOnly,
       state,
-      city
+      city,
+      page,
+      limit,
     })
 
     const results = await aggregateSearchResults({
@@ -39,7 +43,9 @@ serve(async (req) => {
       noticeType,
       activeOnly,
       state,
-      city
+      city,
+      page,
+      limit,
     })
 
     return new Response(
