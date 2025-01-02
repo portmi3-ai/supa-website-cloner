@@ -25,12 +25,12 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     
     // Add keyword search - ensure we're not sending empty strings
     if (params.searchTerm && params.searchTerm !== '*') {
-      queryParams.append('keywords', params.searchTerm)
+      queryParams.append('qterm', params.searchTerm)
     }
     
     // Add agency filter if specified
     if (params.agency && params.agency !== 'all') {
-      queryParams.append('department', params.agency)
+      queryParams.append('deptname', params.agency)
     }
     
     // Add date filters if specified
