@@ -2,18 +2,7 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Share2 } from "lucide-react"
 import { format, isValid, parseISO } from "date-fns"
-
-interface FederalContract {
-  id: string
-  title: string
-  agency: string
-  type: string
-  posted_date: string
-  value: number
-  response_due: string
-  naics_code: string
-  set_aside: string
-}
+import { FederalContract } from "./types"
 
 interface FederalContractsTableRowProps {
   contract: FederalContract

@@ -1,30 +1,14 @@
 import { Table, TableBody } from "@/components/ui/table"
 import { FederalContractsTableHeader } from "./FederalContractsTableHeader"
 import { FederalContractsTableRow } from "./FederalContractsTableRow"
-
-interface FederalContractsTableContentProps {
-  contracts: Array<{
-    id: string
-    title: string
-    agency: string
-    type: string
-    posted_date: string
-    value: number
-    response_due: string
-    naics_code: string
-    set_aside: string
-  }>
-  sortField: string
-  sortDirection: 'asc' | 'desc'
-  onSort: (field: string) => void
-}
+import { TableProps } from "./types"
 
 export function FederalContractsTableContent({
   contracts,
   sortField,
   sortDirection,
   onSort,
-}: FederalContractsTableContentProps) {
+}: TableProps) {
   return (
     <Table>
       <FederalContractsTableHeader
