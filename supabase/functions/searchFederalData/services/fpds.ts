@@ -1,7 +1,7 @@
 import { SearchParams, FederalDataResult } from '../types.ts'
 import { withRetry, parseErrorResponse, validateApiEndpoint, validateRequestParams, ApiError, getRateLimitDelay } from '../utils/apiRetry.ts'
 
-const FPDS_API_URL = "https://www.fpds.gov/ezsearch/FEEDS/ATOM"
+const FPDS_API_URL = "https://api.sam.gov/prod/opportunities/v2/search" // Updated to use SAM.gov API
 
 export async function fetchFPDSData(params: SearchParams): Promise<FederalDataResult[]> {
   console.log('FPDS Search params:', {
@@ -19,35 +19,37 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
   }
 
   try {
-    // Build query parameters
+    const apiKey = Deno.env.get('SAM_API_KEY')
+    if (!apiKey) {
+      console.error('SAM API key is missing')
+      throw new Error('SAM API key configuration error')
+    }
+
+    // Build query parameters for SAM.gov API
     const queryParams = new URLSearchParams()
-    
-    // Always use a search term, default to '*' if none provided
     const searchQuery = params.searchTerm?.trim() || '*'
-    queryParams.append('q', searchQuery)
+    queryParams.append('keywords', searchQuery)
     
-    // Add agency filter if specified
     if (params.agency && params.agency !== 'all') {
-      queryParams.append('agency', params.agency)
+      queryParams.append('department', params.agency)
     }
     
-    // Add date range if specified
     if (params.startDate) {
-      queryParams.append('fromDate', new Date(params.startDate).toISOString().split('T')[0])
+      queryParams.append('postedFrom', new Date(params.startDate).toISOString().split('T')[0])
     }
     if (params.endDate) {
-      queryParams.append('toDate', new Date(params.endDate).toISOString().split('T')[0])
+      queryParams.append('postedTo', new Date(params.endDate).toISOString().split('T')[0])
     }
     
     // Add pagination
     const offset = (params.page || 0) * 100
-    queryParams.append('start', offset.toString())
-    queryParams.append('size', '100')
+    queryParams.append('limit', '100')
+    queryParams.append('offset', offset.toString())
 
     const paramErrors = validateRequestParams({
-      q: searchQuery,
-      start: offset,
-      size: 100,
+      keywords: searchQuery,
+      offset,
+      limit: 100,
     })
     
     if (paramErrors.length > 0) {
@@ -55,14 +57,16 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     }
 
     const requestUrl = `${FPDS_API_URL}?${queryParams}`
-    console.log('FPDS API request URL:', requestUrl)
+    console.log('SAM.gov API request URL:', requestUrl)
 
     // Log the full request details
-    console.log('FPDS API request details:', {
+    console.log('SAM.gov API request details:', {
       url: requestUrl,
       method: 'GET',
       headers: {
-        'Accept': 'application/xml',
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
         'User-Agent': 'ContractSearchApp/1.0'
       },
       timestamp: new Date().toISOString()
@@ -74,12 +78,14 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl, {
         headers: {
-          'Accept': 'application/xml',
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'User-Agent': 'ContractSearchApp/1.0'
         }
       })
       
-      console.log('FPDS API response status:', {
+      console.log('SAM.gov API response status:', {
         status: res.status,
         statusText: res.statusText,
         headers: Object.fromEntries(res.headers.entries()),
@@ -87,12 +93,12 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       })
 
       if (!res.ok) {
-        console.error('FPDS API error response:', {
+        console.error('SAM.gov API error response:', {
           status: res.status,
           statusText: res.statusText,
           headers: Object.fromEntries(res.headers.entries())
         })
-        const error = new Error(`FPDS API error: ${res.status}`) as ApiError
+        const error = new Error(`SAM.gov API error: ${res.status}`) as ApiError
         error.status = res.status
         error.response = res
         throw error
@@ -105,67 +111,34 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       retryableStatuses: [429, 500, 502, 503, 504]
     })
 
-    const xmlText = await response.text()
-    console.log('FPDS Raw XML response:', {
-      length: xmlText.length,
-      firstChars: xmlText.substring(0, 500),
-      containsData: xmlText.includes('<entry>'),
-      containsError: xmlText.includes('<error>'),
-      containsTitle: xmlText.includes('<title>'),
+    const data = await response.json()
+    console.log('SAM.gov API response data:', {
+      totalRecords: data.totalRecords,
+      hasData: !!data.opportunitiesData,
+      firstResult: data.opportunitiesData?.[0]?.title,
       timestamp: new Date().toISOString()
     })
 
-    // Try to extract error message if present
-    const errorMatch = xmlText.match(/<error>(.*?)<\/error>/) || xmlText.match(/<message>(.*?)<\/message>/)
-    if (errorMatch) {
-      console.error('FPDS API returned error in XML:', errorMatch[1])
-      throw new Error(`FPDS API error: ${errorMatch[1]}`)
+    if (!data.opportunitiesData) {
+      console.warn('No opportunities data in response')
+      return []
     }
 
-    // Extract contract data from XML
-    const entries = xmlText.match(/<entry>(.*?)<\/entry>/gs) || []
-    const titleMatches = xmlText.match(/<title>(.*?)<\/title>/g) || []
-    const descMatches = xmlText.match(/<summary.*?>(.*?)<\/summary>/g) || []
-    const dateMatches = xmlText.match(/<updated>(.*?)<\/updated>/g) || []
+    // Transform opportunities data into contract format
+    const results: FederalDataResult[] = data.opportunitiesData.map((opp: any) => ({
+      id: opp.noticeId || crypto.randomUUID(),
+      title: opp.title || 'Untitled Opportunity',
+      description: opp.description || '',
+      agency: opp.department || params.agency || 'Unknown',
+      type: opp.noticeType || 'Contract',
+      posted_date: opp.postedDate || new Date().toISOString(),
+      value: opp.baseAndAllOptionsValue || 0,
+      response_due: opp.responseDeadLine || null,
+      naics_code: opp.naicsCode || null,
+      set_aside: opp.setAside || null
+    }))
 
-    console.log('FPDS XML parsing results:', {
-      entries: entries.length,
-      titleMatches: titleMatches.length,
-      descMatches: descMatches.length,
-      dateMatches: dateMatches.length,
-      firstTitle: titleMatches[0]?.replace(/<\/?title>/g, '').trim(),
-      timestamp: new Date().toISOString()
-    })
-
-    // Transform matches into contract data
-    const results: FederalDataResult[] = titleMatches.map((title, index) => {
-      const contractData = {
-        id: crypto.randomUUID(),
-        title: title.replace(/<\/?title>/g, '').trim(),
-        description: descMatches[index] 
-          ? descMatches[index].replace(/<summary.*?>(.*?)<\/summary>/g, '$1').trim()
-          : '',
-        agency: params.agency || 'Unknown',
-        type: 'Contract',
-        posted_date: dateMatches[index]
-          ? dateMatches[index].replace(/<\/?updated>/g, '').trim()
-          : new Date().toISOString(),
-        value: 0,
-        response_due: null,
-        naics_code: null,
-        set_aside: null
-      }
-
-      console.log('FPDS Transformed contract:', {
-        id: contractData.id,
-        title: contractData.title.substring(0, 50) + '...',
-        timestamp: new Date().toISOString()
-      })
-
-      return contractData
-    })
-
-    console.log('FPDS Final results:', {
+    console.log('SAM.gov Final results:', {
       count: results.length,
       firstResult: results[0] ? {
         id: results[0].id,
@@ -176,7 +149,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
 
     return results
   } catch (error) {
-    console.error('FPDS fetch error:', {
+    console.error('SAM.gov fetch error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
