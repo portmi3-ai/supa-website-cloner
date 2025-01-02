@@ -41,23 +41,23 @@ serve(async (req) => {
 
     // Add active only filter if specified
     if (activeOnly) {
-      samParams.append('active', 'true')
+      samParams.append('registrationStatus', 'Active')
       console.log('Added active only filter')
     }
 
-    console.log('Making request to SAM.gov with params:', samParams.toString())
+    console.log('Making request to SAM.gov with URL:', `${SAM_API_URL}?${samParams.toString()}`)
     const samResponse = await fetch(`${SAM_API_URL}?${samParams.toString()}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'X-Api-Key': apiKey,
-        'apikey': apiKey  // Adding the apikey header as required by SAM.gov
       }
     })
 
     if (!samResponse.ok) {
-      console.error('SAM.gov API error:', samResponse.status)
-      throw new Error(`SAM.gov API error: ${samResponse.status} ${samResponse.statusText}`)
+      const errorText = await samResponse.text()
+      console.error('SAM.gov API error response:', errorText)
+      throw new Error(`SAM.gov API error: ${samResponse.status} ${samResponse.statusText}\n${errorText}`)
     }
 
     const samData = await samResponse.json()
