@@ -13,13 +13,22 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     // Ensure we have a valid search query, use '*' for empty searches
     const searchQuery = params.searchTerm?.trim() || '*'
     const queryParams = new URLSearchParams({
-      q: searchQuery,
       api_key: apiKey,
+      q: searchQuery,
       page: '0',
       size: '100' // Increased from 10 to get more results
     })
 
-    console.log('Making SAM.gov API request with query:', searchQuery)
+    // Add optional parameters if they exist
+    if (params.agency) {
+      queryParams.append('organizationId', params.agency)
+    }
+
+    console.log('Making SAM.gov API request:', {
+      url: SAM_API_URL,
+      query: searchQuery,
+      hasAgency: !!params.agency
+    })
     
     const response = await fetch(`${SAM_API_URL}?${queryParams}`, {
       headers: {
