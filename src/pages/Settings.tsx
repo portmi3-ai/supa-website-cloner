@@ -1,25 +1,18 @@
 import { useAuth } from "@/hooks/useAuth"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-
-const colorOptions = [
-  { name: "Ocean Blue", value: "ocean-blue", class: "bg-[#0EA5E9]" },
-  { name: "Primary Purple", value: "primary-purple", class: "bg-[#9b87f5]" },
-  { name: "Soft Green", value: "soft-green", class: "bg-[#F2FCE2]" },
-  { name: "Soft Pink", value: "soft-pink", class: "bg-[#FFDEE2]" },
-  { name: "Dark Purple", value: "dark-purple", class: "bg-[#1A1F2C]" },
-]
+import { useTheme } from "next-themes"
 
 const Settings = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const { setTheme, theme } = useTheme()
 
   // Fetch user settings
   const { data: settings, isLoading } = useQuery({
@@ -59,8 +52,9 @@ const Settings = () => {
     },
   })
 
-  const handleThemeChange = (theme: string) => {
-    updateSettings.mutate({ theme })
+  const handleThemeChange = (newTheme: string) => {
+    updateSettings.mutate({ theme: newTheme })
+    setTheme(newTheme)
   }
 
   const handleNotificationsChange = (enabled: boolean) => {
@@ -79,7 +73,6 @@ const Settings = () => {
 
   return (
     <DashboardLayout>
-      <TopBar username={user?.email} />
       <div className="container mx-auto p-6 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Settings</h1>
         
@@ -88,22 +81,22 @@ const Settings = () => {
             <h2 className="text-xl font-semibold mb-4">Theme Preferences</h2>
             <div className="space-y-4">
               <RadioGroup
-                value={settings?.theme || "ocean-blue"}
+                value={theme || "system"}
                 onValueChange={handleThemeChange}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               >
-                {colorOptions.map((option) => (
-                  <div
-                    key={option.value}
-                    className="flex items-center space-x-2 p-4 rounded-lg border hover:border-primary transition-colors"
-                  >
-                    <RadioGroupItem value={option.value} id={option.value} />
-                    <Label htmlFor={option.value} className="flex items-center space-x-2 cursor-pointer">
-                      <div className={`w-6 h-6 rounded-full ${option.class}`} />
-                      <span>{option.name}</span>
-                    </Label>
-                  </div>
-                ))}
+                <div className="flex items-center space-x-2 p-4 rounded-lg border hover:border-primary transition-colors">
+                  <RadioGroupItem value="light" id="light" />
+                  <Label htmlFor="light">Light</Label>
+                </div>
+                <div className="flex items-center space-x-2 p-4 rounded-lg border hover:border-primary transition-colors">
+                  <RadioGroupItem value="dark" id="dark" />
+                  <Label htmlFor="dark">Dark</Label>
+                </div>
+                <div className="flex items-center space-x-2 p-4 rounded-lg border hover:border-primary transition-colors">
+                  <RadioGroupItem value="system" id="system" />
+                  <Label htmlFor="system">System</Label>
+                </div>
               </RadioGroup>
             </div>
           </Card>
