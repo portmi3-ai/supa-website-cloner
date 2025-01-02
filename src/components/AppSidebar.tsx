@@ -1,86 +1,32 @@
-import { BarChart, Bell, Home, HelpCircle, Settings, User, FileText, FileCheck, Files } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+import { Home, FileText, Search, Users, Settings, Bell } from "lucide-react"
+import { Sidebar, SidebarGroup, SidebarItem, SidebarMenu } from "@/components/ui/sidebar"
+import { NotificationButton } from "@/components/notifications/NotificationButton"
 
 export function AppSidebar() {
-  const navigate = useNavigate()
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: Home,
-      onClick: () => navigate("/"),
-    },
-    {
-      title: "Contracts",
-      icon: FileText,
-      onClick: () => navigate("/contracts"),
-    },
-    {
-      title: "Proposals",
-      icon: FileCheck,
-      onClick: () => navigate("/proposals"),
-    },
-    {
-      title: "Documents",
-      icon: Files,
-      onClick: () => navigate("/documents"),
-    },
-    {
-      title: "Analytics",
-      icon: BarChart,
-      onClick: () => navigate("/analytics"),
-    },
-    {
-      title: "Profile",
-      icon: User,
-      onClick: () => navigate("/profile"),
-    },
-    {
-      title: "Notifications",
-      icon: Bell,
-      onClick: () => navigate("/notifications"),
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      onClick: () => navigate("/settings"),
-    },
-    {
-      title: "Help",
-      icon: HelpCircle,
-      onClick: () => navigate("/help"),
-    },
-  ]
-
   return (
     <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton onClick={item.onClick}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+      <SidebarGroup>
+        <SidebarMenu>
+          <SidebarItem href="/" icon={Home}>
+            Dashboard
+          </SidebarItem>
+          <SidebarItem href="/contracts" icon={FileText}>
+            Contracts
+          </SidebarItem>
+          <SidebarItem href="/federal-contracts/search" icon={Search}>
+            Federal Contracts Search
+          </SidebarItem>
+          <SidebarItem href="/team" icon={Users}>
+            Team
+          </SidebarItem>
+          <SidebarItem href="/settings" icon={Settings}>
+            Settings
+          </SidebarItem>
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup className="mt-auto">
+        <NotificationButton />
+      </SidebarGroup>
     </Sidebar>
   )
 }
