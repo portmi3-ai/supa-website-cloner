@@ -21,15 +21,22 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     const today = new Date()
     const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30))
     
+    // Build query parameters with proper formatting
     const queryParams = new URLSearchParams({
       api_key: apiKey,
       postedFrom: params.startDate || thirtyDaysAgo.toISOString().split('T')[0],
       postedTo: params.endDate || new Date().toISOString().split('T')[0],
-      limit: String(params.limit || 100),
+      limit: String(Math.min(params.limit || 100, 100)), // Cap at 100 results
       offset: String((params.page || 0) * (params.limit || 100)),
-      ...(params.searchTerm && params.searchTerm !== '*' && { keywords: params.searchTerm }),
-      ...(params.agency && { department: params.agency }),
     })
+
+    // Only add optional parameters if they exist and are valid
+    if (params.searchTerm && params.searchTerm !== '*') {
+      queryParams.append('keywords', params.searchTerm)
+    }
+    if (params.agency) {
+      queryParams.append('department', params.agency)
+    }
 
     const requestUrl = `${BASE_URL}?${queryParams.toString()}`
     console.log('Making SAM.gov API request:', {
@@ -54,6 +61,14 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
           error: errorText,
           timestamp: new Date().toISOString()
         })
+        
+        // Specific error handling for common cases
+        if (res.status === 401) {
+          throw new ApiError('Invalid API key or unauthorized access', res.status)
+        } else if (res.status === 400) {
+          throw new ApiError('Invalid request parameters', res.status)
+        }
+        
         throw new ApiError(`SAM API Error: ${res.status} ${res.statusText}`, res.status)
       }
 
@@ -80,6 +95,11 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       limit: params.limit,
       timestamp: new Date().toISOString()
     })
+
+    // Return empty array if no results
+    if (!response.opportunitiesData || response.opportunitiesData.length === 0) {
+      return []
+    }
 
     return response.opportunitiesData.map((item: any) => ({
       id: item.noticeId,
