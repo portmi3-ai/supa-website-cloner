@@ -37,6 +37,7 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
     // Add pagination
     queryParams.append('page', (params.page || 0).toString())
     queryParams.append('size', '100') // Request maximum allowed results
+    queryParams.append('api_key', apiKey) // Add API key to query params
 
     const requestUrl = `${SAM_API_URL}?${queryParams}`
     console.log('SAM.gov API request URL:', requestUrl)
@@ -45,7 +46,8 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       const res = await fetch(requestUrl, {
         headers: {
           'Accept': 'application/json',
-          'X-Api-Key': apiKey,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`, // Add Bearer token
         }
       })
 
