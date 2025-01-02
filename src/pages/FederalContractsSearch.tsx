@@ -1,5 +1,5 @@
 import { FederalContractsContainer } from "@/components/federal-contracts/FederalContractsContainer"
 
-export function FederalContractsSearch() {
+export default function FederalContractsSearch() {
   return <FederalContractsContainer />
 }
