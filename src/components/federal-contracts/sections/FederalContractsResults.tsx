@@ -38,12 +38,22 @@ export function FederalContractsResults({
 }: FederalContractsResultsProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between p-4 glass-card">
-        <div className="text-sm text-muted-foreground">
-          {totalRecords} results found
+      <div className="flex items-center justify-between p-4 glass-card backdrop-blur-md border border-white/10">
+        <div className="text-sm">
+          <span className="text-muted-foreground">Found </span>
+          <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">
+            {totalRecords.toLocaleString()}
+          </span>
+          <span className="text-muted-foreground"> results</span>
         </div>
-        <Button variant="outline" size="sm" className="cyber-button">
-          Export
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="cyber-button group relative overflow-hidden"
+        >
+          <span className="relative z-10 group-hover:text-white transition-colors">
+            Export Results
+          </span>
         </Button>
       </div>
       <FederalContractsTable
