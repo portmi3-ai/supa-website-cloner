@@ -2,6 +2,7 @@ import { useState } from "react"
 import { FederalContractsSearchBar } from "@/components/federal-contracts/FederalContractsSearchBar"
 import { FederalContractsFilters } from "@/components/federal-contracts/FederalContractsFilters"
 import { FederalContractsTable } from "@/components/federal-contracts/FederalContractsTable"
+import { useFederalContractsSearch } from "@/hooks/useFederalContractsSearch"
 
 export function FederalContractsSearch() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -12,6 +13,13 @@ export function FederalContractsSearch() {
   }>({
     from: undefined,
     to: undefined,
+  })
+
+  const { data: contracts, isLoading } = useFederalContractsSearch({
+    searchTerm: searchQuery,
+    agency: selectedAgency === "all" ? undefined : selectedAgency,
+    startDate: dateRange.from,
+    endDate: dateRange.to,
   })
 
   return (
@@ -29,8 +37,9 @@ export function FederalContractsSearch() {
           onAgencyChange={setSelectedAgency}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
+          searchTerm={searchQuery}
         />
-        <FederalContractsTable />
+        <FederalContractsTable contracts={contracts || []} isLoading={isLoading} />
       </div>
     </div>
   )
