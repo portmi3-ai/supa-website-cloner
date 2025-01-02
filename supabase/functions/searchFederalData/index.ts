@@ -37,7 +37,7 @@ serve(async (req) => {
       postedTo: endDate ? endDate : formatDate(today),
     })
 
-    // Add search term if provided
+    // Add search term if provided (but don't require it)
     if (searchTerm) {
       samParams.append('keywords', searchTerm)
     }
@@ -74,7 +74,7 @@ serve(async (req) => {
     if (!samResponse.ok) {
       const errorText = await samResponse.text()
       console.error('SAM.gov API error response:', errorText)
-      throw new Error(`SAM.gov API error: ${samResponse.status} ${samResponse.statusText}\n${errorText}`)
+      throw new Error(`SAM.gov API error: ${samResponse.status}\n${errorText}`)
     }
 
     const samData = await samResponse.json()
