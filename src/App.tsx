@@ -9,6 +9,8 @@ import Profile from "@/pages/Profile"
 import Team from "@/pages/Team"
 import Documents from "@/pages/Documents"
 import Help from "@/pages/Help"
+import Analytics from "@/pages/Analytics"
+import Vendors from "@/pages/Vendors"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/hooks/useAuth"
@@ -83,6 +85,16 @@ const router = createBrowserRouter([
   {
     path: "/help",
     element: <DashboardLayout><Help /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/analytics",
+    element: <DashboardLayout><Analytics /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/vendors",
+    element: <DashboardLayout><Vendors /></DashboardLayout>,
     errorElement: <RouteError />,
   },
 ])
