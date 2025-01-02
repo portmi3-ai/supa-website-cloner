@@ -5,7 +5,7 @@ import { FederalContractsTable } from "@/components/federal-contracts/FederalCon
 import { useFederalContractsSearch } from "@/hooks/useFederalContractsSearch"
 import { Button } from "@/components/ui/button"
 import { Bell } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export function FederalContractsSearch() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -102,6 +102,7 @@ export function FederalContractsSearch() {
         <FederalContractsTable
           contracts={contracts?.data || []}
           isLoading={isLoading}
+          error={error}
           currentPage={currentPage}
           totalPages={contracts?.totalPages || 1}
           onPageChange={setCurrentPage}

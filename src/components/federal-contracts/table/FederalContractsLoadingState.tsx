@@ -1,12 +1,17 @@
 import { TableHead, TableHeader, TableRow, Table } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function FederalContractsLoadingState() {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead colSpan={5} className="h-24 text-center">
-            Loading contracts...
+          <TableHead className="w-full">
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
           </TableHead>
         </TableRow>
       </TableHeader>

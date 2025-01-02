@@ -23,6 +23,7 @@ interface FederalContract {
 interface FederalContractsTableProps {
   contracts: FederalContract[]
   isLoading: boolean
+  error?: Error | null
   currentPage: number
   totalPages: number
   onPageChange: (page: number) => void
@@ -34,6 +35,7 @@ interface FederalContractsTableProps {
 export function FederalContractsTable({
   contracts,
   isLoading,
+  error,
   currentPage,
   totalPages,
   onPageChange,
@@ -49,13 +51,14 @@ export function FederalContractsTable({
     )
   }
 
-  if (!contracts?.length) {
+  if (error || !contracts?.length) {
     return (
       <div className="rounded-md border">
         <FederalContractsEmptyState
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={onSort}
+          error={error}
         />
       </div>
     )
