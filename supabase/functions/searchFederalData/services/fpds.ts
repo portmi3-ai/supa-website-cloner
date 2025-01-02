@@ -20,13 +20,6 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       throw new Error('SAM API key configuration error')
     }
 
-    console.log('SAM API key verification:', {
-      keyExists: !!apiKey,
-      keyLength: apiKey.length,
-      keyPrefix: apiKey.substring(0, 4) + '...',
-      timestamp: new Date().toISOString()
-    })
-
     // Build query parameters for SAM.gov API
     const queryParams = new URLSearchParams()
     
@@ -65,7 +58,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       url: requestUrl,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey.substring(0, 4)}...`,
+        'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
@@ -82,7 +75,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'User-Agent': 'ContractSearchApp/1.0'
+          'api_key': apiKey
         }
       })
       
