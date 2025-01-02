@@ -1,24 +1,35 @@
-import { RouterProvider } from "react-router-dom"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import "./App.css"
 import { useAuth } from "@/hooks/useAuth"
+import { AppLayout } from "@/components/AppLayout"
+import { ThemeProvider } from "@/components/theme-provider"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { router } from "./config/routes"
+import { RouterProvider } from "react-router-dom"
+import { Toaster } from "@/components/ui/toaster"
 
 export { useAuth }
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
-export default function App() {
+function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
           <Toaster />
-        </ThemeProvider>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }
+
+export default App

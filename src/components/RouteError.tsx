@@ -1,33 +1,30 @@
-import { useRouteError } from "react-router-dom"
+import { useRouteError, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 
 export function RouteError() {
   const error = useRouteError() as Error
+  const navigate = useNavigate()
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md p-6 space-y-4">
-        <div className="flex items-center space-x-2 text-destructive">
-          <AlertCircle className="h-5 w-5" />
-          <h2 className="text-2xl font-bold">Route Error</h2>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full space-y-8 p-6">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+          <h2 className="mt-6 text-3xl font-bold tracking-tight">Page Error</h2>
+          <p className="mt-2 text-muted-foreground">
+            {error?.message || "Sorry, we couldn't load this page"}
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          {error?.message || "An error occurred while loading this route"}
-        </p>
-        <div className="flex space-x-2">
-          <Button onClick={() => window.location.reload()}>
-            Try again
+        <div className="flex gap-4 justify-center">
+          <Button onClick={() => navigate(-1)} variant="default">
+            Go back
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = '/'}
-          >
+          <Button onClick={() => navigate("/")} variant="outline">
             Go to homepage
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
