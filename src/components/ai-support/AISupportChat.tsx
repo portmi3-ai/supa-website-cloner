@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
-import { Loader2, Send, Bot } from "lucide-react"
+import { Loader2, Send, Bot, Clock } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
+import { format } from "date-fns"
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  timestamp: Date
 }
 
 export function AISupportChat() {
@@ -30,7 +32,7 @@ export function AISupportChat() {
   }, [rateLimitCountdown])
 
   const handleRateLimitError = () => {
-    setRateLimitCountdown(60) // 60 seconds countdown
+    setRateLimitCountdown(60)
     toast.error('Rate limit reached. Please wait a moment before trying again.')
   }
 
@@ -38,7 +40,11 @@ export function AISupportChat() {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    const newMessage: Message = { role: 'user', content: input }
+    const newMessage: Message = { 
+      role: 'user', 
+      content: input,
+      timestamp: new Date()
+    }
     setMessages(prev => [...prev, newMessage])
     setInput('')
     setIsLoading(true)
@@ -49,7 +55,6 @@ export function AISupportChat() {
       })
 
       if (error) {
-        // Check if it's a rate limit error
         if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
           handleRateLimitError()
         } else {
@@ -58,7 +63,11 @@ export function AISupportChat() {
         throw error
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: data.response,
+        timestamp: new Date()
+      }])
     } catch (error) {
       console.error('Error:', error)
     } finally {
@@ -67,12 +76,13 @@ export function AISupportChat() {
   }
 
   return (
-    <Card className="flex flex-col h-[600px] w-full max-w-2xl mx-auto">
+    <Card className="flex flex-col h-[600px] w-full max-w-2xl mx-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2 p-4 border-b">
-        <Bot className="h-5 w-5 text-primary" />
+        <Bot className="h-5 w-5 text-primary animate-pulse" />
         <h2 className="text-lg font-semibold">AI Support Assistant</h2>
         {rateLimitCountdown !== null && (
-          <span className="ml-auto text-sm text-muted-foreground">
+          <span className="ml-auto text-sm text-muted-foreground flex items-center gap-1">
+            <Clock className="h-4 w-4" />
             Please wait {rateLimitCountdown}s
           </span>
         )}
@@ -85,23 +95,29 @@ export function AISupportChat() {
               key={i}
               className={`flex ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              } animate-fade-in`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
+                className={`max-w-[80%] rounded-lg p-3 transition-all duration-200 ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground ml-4'
-                    : 'bg-muted mr-4'
+                    ? 'bg-primary text-primary-foreground ml-4 hover:shadow-lg hover:-translate-y-0.5'
+                    : 'bg-muted mr-4 hover:shadow-lg hover:-translate-y-0.5'
                 }`}
               >
-                {message.content}
+                <div className="mb-1">{message.content}</div>
+                <div className="text-xs opacity-70 mt-1">
+                  {format(message.timestamp, 'HH:mm')}
+                </div>
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start">
+            <div className="flex justify-start animate-fade-in">
               <div className="bg-muted rounded-lg p-3 mr-4">
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">AI is typing...</span>
+                </div>
               </div>
             </div>
           )}
@@ -116,10 +132,12 @@ export function AISupportChat() {
             ? `Rate limit reached. Please wait ${rateLimitCountdown}s...` 
             : "Type your message..."}
           disabled={isLoading || rateLimitCountdown !== null}
+          className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
         />
         <Button 
           type="submit" 
           disabled={isLoading || !input.trim() || rateLimitCountdown !== null}
+          className="transition-all duration-200 hover:scale-105"
         >
           <Send className="h-4 w-4" />
         </Button>
