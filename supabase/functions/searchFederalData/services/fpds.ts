@@ -3,17 +3,48 @@ import { SearchParams, FederalDataResult } from '../types.ts'
 const FPDS_API_URL = "https://www.fpds.gov/ezsearch/FEEDS/ATOM"
 
 export async function fetchFPDSData(params: SearchParams): Promise<FederalDataResult[]> {
-  console.log('Fetching FPDS data...')
-  try {
-    const queryParams = new URLSearchParams({
-      q: params.searchTerm,
-      agency: params.agency || ''
-    })
+  console.log('Fetching FPDS data with params:', {
+    hasSearchTerm: !!params.searchTerm,
+    agency: params.agency,
+  })
 
-    const response = await fetch(`${FPDS_API_URL}?${queryParams}`)
+  try {
+    // Ensure search query is valid - if empty or undefined, use '*' as default
+    const searchQuery = params.searchTerm?.trim() || '*'
+    
+    // Validate search query
+    if (searchQuery === '') {
+      console.warn('Empty search query provided for FPDS, using default "*"')
+    }
+
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    queryParams.append('q', searchQuery)
+
+    // Add optional agency filter if provided
+    if (params.agency && params.agency !== 'all') {
+      queryParams.append('agency', params.agency)
+    }
+
+    const requestUrl = `${FPDS_API_URL}?${queryParams}`
+    console.log('Making FPDS API request:', {
+      url: FPDS_API_URL,
+      query: searchQuery,
+      hasAgency: !!params.agency,
+      requestUrl,
+    })
+    
+    const response = await fetch(requestUrl)
     
     if (!response.ok) {
-      throw new Error(`FPDS API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('FPDS API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        requestUrl,
+      })
+      throw new Error(`FPDS API error: ${response.status} ${errorText}`)
     }
 
     const xmlText = await response.text()
@@ -24,7 +55,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       id: crypto.randomUUID(),
       title: title.replace(/<\/?title>/g, ''),
       description: '',
-      funding_agency: null,
+      funding_agency: params.agency || null,
       funding_amount: null,
       status: 'active',
       source: 'FPDS',
