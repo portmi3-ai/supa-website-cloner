@@ -26,12 +26,14 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
         console.error('SAM API key is missing')
         errors.push('SAM.gov: API key is missing')
       } else {
+        console.log('Fetching from SAM.gov with params:', params)
         const samResults = await fetchSAMData(params, samApiKey)
         if (samResults && Array.isArray(samResults)) {
           results = [...results, ...samResults]
           successfulSources++
           console.log('SAM.gov fetch successful:', {
             count: samResults.length,
+            firstResult: samResults[0],
             timestamp: new Date().toISOString()
           })
         }
@@ -44,12 +46,14 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
 
     // Fetch from FPDS
     try {
+      console.log('Fetching from FPDS with params:', params)
       const fpdsResults = await fetchFPDSData(params)
       if (fpdsResults && Array.isArray(fpdsResults)) {
         results = [...results, ...fpdsResults]
         successfulSources++
         console.log('FPDS fetch successful:', {
           count: fpdsResults.length,
+          firstResult: fpdsResults[0],
           timestamp: new Date().toISOString()
         })
       }
@@ -68,12 +72,13 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       timestamp: new Date().toISOString()
     })
 
-    if (successfulSources === 0) {
+    if (successfulSources === 0 && errors.length > 0) {
+      console.error('Failed to fetch data from all sources:', errors)
       throw new Error(`Failed to fetch data from all available sources: ${errors.join('; ')}`)
     }
 
-    // Apply search term filter
-    if (params.searchTerm?.trim()) {
+    // Apply search term filter if provided and not '*'
+    if (params.searchTerm?.trim() && params.searchTerm !== '*') {
       const searchTermLower = params.searchTerm.toLowerCase().trim()
       const filteredResults = results.filter(result => 
         result.title?.toLowerCase().includes(searchTermLower) ||
@@ -87,18 +92,18 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       results = filteredResults
     }
 
-    // Apply pagination
-    const page = params.page || 0
-    const limit = params.limit || 100
-    const totalRecords = results.length
-    const totalPages = Math.ceil(totalRecords / limit)
-    const start = page * limit
-    const end = start + limit
-
     // Sort results if needed
     if (params.sortField) {
       results = sortResults(results, params.sortField, params.sortDirection)
     }
+
+    // Apply pagination
+    const page = params.page || 0
+    const limit = Math.min(params.limit || 100, 100) // Cap at 100 results per page
+    const totalRecords = results.length
+    const totalPages = Math.ceil(totalRecords / limit)
+    const start = page * limit
+    const end = start + limit
     
     const paginatedResults = results.slice(start, end)
 
