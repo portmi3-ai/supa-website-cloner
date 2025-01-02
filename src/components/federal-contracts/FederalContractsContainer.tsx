@@ -43,9 +43,9 @@ export function FederalContractsContainer() {
 
   return (
     <div className="container space-y-8 py-8">
-      <div className="search-container glow-effect">
+      <div className="search-container glow-effect floating">
         <FederalContractsHeader />
-        <div className="mt-6">
+        <div className="mt-6 animate-fade-in">
           <FederalContractsControls
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -61,7 +61,7 @@ export function FederalContractsContainer() {
         </div>
       </div>
       
-      <div className="results-table">
+      <div className="results-table animate-scale-in">
         <FederalContractsResults
           contracts={contracts?.data || []}
           isLoading={isLoading}

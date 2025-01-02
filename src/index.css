@@ -46,6 +46,8 @@
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 .search-input {
@@ -69,45 +71,13 @@
   }
 }
 
-.glow-effect {
-  @apply relative;
-  &::after {
-    content: '';
-    @apply absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200;
-    box-shadow: 0 0 15px hsl(224.3 76.3% 48%);
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  &:hover::after {
-    @apply opacity-100;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.filter-button {
-  @apply relative overflow-hidden transition-all duration-200;
-  &::before {
-    content: '';
-    @apply absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200;
-    background: linear-gradient(135deg, hsl(224.3 76.3% 48%), hsl(277 75% 84%));
-  }
-  &:hover::before {
-    @apply opacity-20;
-  }
-}
-
 .results-table {
   @apply rounded-lg border bg-card shadow-xl;
   background: linear-gradient(135deg, hsl(240 5.9% 10%) 0%, hsl(240 5.9% 12%) 100%);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 .table-header {
@@ -159,12 +129,42 @@
   box-shadow: 0 4px 16px rgba(31, 38, 135, 0.37);
   
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow: 0 8px 24px rgba(31, 38, 135, 0.5);
+    &::before {
+      opacity: 1;
+    }
   }
   
   &:active {
     transform: translateY(0);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(45deg, 
+      hsl(224.3 76.3% 48%), 
+      hsl(277 75% 84%),
+      hsl(224.3 76.3% 48%)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+    animation: gradient-shift 3s linear infinite;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
