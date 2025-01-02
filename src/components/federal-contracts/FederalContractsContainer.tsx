@@ -42,32 +42,39 @@ export function FederalContractsContainer() {
   }
 
   return (
-    <div className="container space-y-6 py-6">
-      <FederalContractsHeader />
-      <FederalContractsControls
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedAgency={selectedAgency}
-        onAgencyChange={setSelectedAgency}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        noticeType={noticeType}
-        onNoticeTypeChange={setNoticeType}
-        activeOnly={activeOnly}
-        onActiveOnlyChange={setActiveOnly}
-      />
-      <FederalContractsResults
-        contracts={contracts?.data || []}
-        isLoading={isLoading}
-        error={error}
-        currentPage={currentPage}
-        totalPages={contracts?.totalPages || 1}
-        onPageChange={setCurrentPage}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        totalRecords={contracts?.totalRecords || 0}
-      />
+    <div className="container space-y-8 py-8">
+      <div className="search-container glow-effect">
+        <FederalContractsHeader />
+        <div className="mt-6">
+          <FederalContractsControls
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedAgency={selectedAgency}
+            onAgencyChange={setSelectedAgency}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            noticeType={noticeType}
+            onNoticeTypeChange={setNoticeType}
+            activeOnly={activeOnly}
+            onActiveOnlyChange={setActiveOnly}
+          />
+        </div>
+      </div>
+      
+      <div className="results-table">
+        <FederalContractsResults
+          contracts={contracts?.data || []}
+          isLoading={isLoading}
+          error={error}
+          currentPage={currentPage}
+          totalPages={contracts?.totalPages || 1}
+          onPageChange={setCurrentPage}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          totalRecords={contracts?.totalRecords || 0}
+        />
+      </div>
     </div>
   )
 }

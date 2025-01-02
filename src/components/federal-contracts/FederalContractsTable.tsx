@@ -45,7 +45,7 @@ export function FederalContractsTable({
 }: FederalContractsTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm">
         <FederalContractsLoadingState />
       </div>
     )
@@ -53,7 +53,7 @@ export function FederalContractsTable({
 
   if (error || !contracts?.length) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm">
         <FederalContractsEmptyState
           sortField={sortField}
           sortDirection={sortDirection}
@@ -66,7 +66,7 @@ export function FederalContractsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm overflow-hidden">
         <Table>
           <FederalContractsTableHeader
             sortField={sortField}

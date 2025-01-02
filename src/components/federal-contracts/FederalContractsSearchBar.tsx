@@ -20,13 +20,13 @@ export function FederalContractsSearchBar({
   }, [debouncedSearchTerm, onChange])
 
   return (
-    <div className="relative">
-      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="search-input glow-effect">
+      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground animate-pulse-glow" />
       <Input
         placeholder="Search contracts by keyword or number..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="pl-8"
+        className="pl-8 bg-background/50 backdrop-blur-sm border-0"
       />
     </div>
   )
