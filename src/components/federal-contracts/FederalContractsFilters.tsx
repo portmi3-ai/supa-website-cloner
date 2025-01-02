@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState } from "react"
-import { useSaveSearch } from "@/hooks/useFederalContractsSearch"
+import { useSaveSearch } from "@/hooks/useSaveSearch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface FederalContractsFiltersProps {
