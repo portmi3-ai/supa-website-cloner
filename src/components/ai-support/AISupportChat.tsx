@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -16,6 +16,23 @@ export function AISupportChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (rateLimitCountdown && rateLimitCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRateLimitCountdown(prev => prev ? prev - 1 : null)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (rateLimitCountdown === 0) {
+      setRateLimitCountdown(null)
+    }
+  }, [rateLimitCountdown])
+
+  const handleRateLimitError = () => {
+    setRateLimitCountdown(60) // 60 seconds countdown
+    toast.error('Rate limit reached. Please wait a moment before trying again.')
+  }
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,12 +48,19 @@ export function AISupportChat() {
         body: { messages: [...messages, newMessage] }
       })
 
-      if (error) throw error
+      if (error) {
+        // Check if it's a rate limit error
+        if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+          handleRateLimitError()
+        } else {
+          toast.error('Failed to get response. Please try again.')
+        }
+        throw error
+      }
 
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Failed to get response. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -47,6 +71,11 @@ export function AISupportChat() {
       <div className="flex items-center gap-2 p-4 border-b">
         <Bot className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold">AI Support Assistant</h2>
+        {rateLimitCountdown !== null && (
+          <span className="ml-auto text-sm text-muted-foreground">
+            Please wait {rateLimitCountdown}s
+          </span>
+        )}
       </div>
 
       <ScrollArea className="flex-1 p-4">
@@ -83,10 +112,15 @@ export function AISupportChat() {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
-          disabled={isLoading}
+          placeholder={rateLimitCountdown !== null 
+            ? `Rate limit reached. Please wait ${rateLimitCountdown}s...` 
+            : "Type your message..."}
+          disabled={isLoading || rateLimitCountdown !== null}
         />
-        <Button type="submit" disabled={isLoading || !input.trim()}>
+        <Button 
+          type="submit" 
+          disabled={isLoading || !input.trim() || rateLimitCountdown !== null}
+        >
           <Send className="h-4 w-4" />
         </Button>
       </form>
