@@ -1,103 +1,128 @@
-import { SearchParams, FederalDataResult } from '../types.ts'
-import { withRetry } from '../utils/apiRetry.ts'
+import { SearchParams } from '../types.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const SAM_API_URL = "https://api.sam.gov/opportunities/v2/search"
+const SAM_API_URL = 'https://api.sam.gov/entity-information/v3/entities'
 
-export async function fetchSAMData(params: SearchParams, apiKey: string): Promise<FederalDataResult[]> {
-  console.log('SAM.gov Search params:', {
-    searchTerm: params.searchTerm,
-    agency: params.agency,
-    startDate: params.startDate,
-    endDate: params.endDate,
-    page: params.page,
-    timestamp: new Date().toISOString()
-  })
+interface SAMApiResponse {
+  totalRecords: number
+  entityData: Array<{
+    entityRegistration: {
+      ueiSAM: string
+      legalBusinessName: string
+      physicalAddress: {
+        addressLine1: string
+        city: string
+        stateOrProvinceCode: string
+        zipCode: string
+      }
+    }
+  }>
+}
+
+function buildQueryParams(params: SearchParams): URLSearchParams {
+  const queryParams = new URLSearchParams()
+
+  // Required search parameters
+  if (params.searchTerm && params.searchTerm !== '*') {
+    queryParams.append('qterm', params.searchTerm)
+  }
+
+  // Optional filters
+  if (params.agency) {
+    queryParams.append('deptname', params.agency)
+  }
+
+  // Date range filters
+  if (params.startDate) {
+    queryParams.append('registrationStartDate', params.startDate)
+  }
+  if (params.endDate) {
+    queryParams.append('registrationEndDate', params.endDate)
+  }
+
+  // Pagination
+  queryParams.append('page', (params.page || 0).toString())
+  queryParams.append('size', '100') // Request maximum allowed results
+
+  return queryParams
+}
+
+async function makeApiRequest(url: string, apiKey: string): Promise<Response> {
+  console.log('Making SAM.gov API request to:', url)
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'apiKey': apiKey,
+        ...corsHeaders
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('SAM.gov API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      })
+      throw new Error(`SAM.gov API error: ${response.status} ${errorText}`)
+    }
+
+    return response
+  } catch (error) {
+    console.error('SAM.gov API request failed:', error)
+    throw new Error(`SAM.gov API request failed: ${error.message}`)
+  }
+}
+
+async function parseApiResponse(response: Response): Promise<any> {
+  try {
+    const data = await response.json()
+    console.log('SAM.gov API response:', {
+      totalRecords: data.totalRecords,
+      recordCount: data.entityData?.length || 0
+    })
+    return data
+  } catch (error) {
+    console.error('Failed to parse SAM.gov API response:', error)
+    throw new Error(`Failed to parse SAM.gov API response: ${error.message}`)
+  }
+}
+
+function transformEntityData(entityData: SAMApiResponse['entityData']) {
+  return entityData.map(entity => ({
+    id: entity.entityRegistration.ueiSAM,
+    title: entity.entityRegistration.legalBusinessName,
+    location: `${entity.entityRegistration.physicalAddress.city}, ${entity.entityRegistration.physicalAddress.stateOrProvinceCode}`,
+    type: 'Entity Registration',
+    status: 'Active'
+  }))
+}
+
+export async function fetchSAMData(params: SearchParams, apiKey: string) {
+  if (!apiKey) {
+    console.error('SAM.gov API key is missing')
+    throw new Error('SAM.gov API key is required')
+  }
 
   try {
-    const queryParams = new URLSearchParams()
-    
-    // Add keyword search using qterm instead of keywords
-    if (params.searchTerm?.trim() && params.searchTerm !== '*') {
-      queryParams.append('qterm', params.searchTerm.trim())
-    }
-
-    // Add agency filter using deptname instead of department
-    if (params.agency && params.agency !== 'all') {
-      queryParams.append('deptname', params.agency)
-    }
-
-    // Add date filters
-    if (params.startDate) {
-      queryParams.append('postedFrom', new Date(params.startDate).toISOString().split('T')[0])
-    }
-    if (params.endDate) {
-      queryParams.append('postedTo', new Date(params.endDate).toISOString().split('T')[0])
-    }
-
-    // Add pagination
-    queryParams.append('page', (params.page || 0).toString())
-    queryParams.append('size', '100') // Request maximum allowed results
-
+    // Build query parameters
+    const queryParams = buildQueryParams(params)
     const requestUrl = `${SAM_API_URL}?${queryParams}`
-    console.log('SAM.gov API request URL:', requestUrl)
 
-    const response = await withRetry(async () => {
-      const res = await fetch(requestUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'apiKey': apiKey, // Use apiKey header instead of Authorization
-        }
-      })
-
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.error('SAM.gov API error:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: errorText,
-          headers: Object.fromEntries(res.headers.entries())
-        })
-        throw new Error(`SAM.gov API error: ${res.status} ${errorText}`)
-      }
-
-      return res
-    })
-
-    const data = await response.json()
-    console.log('SAM.gov Raw response:', {
-      opportunitiesCount: data.opportunitiesData?.length || 0,
-      totalRecords: data.totalRecords || 0,
-      metadata: data.metadata || {}
-    })
-
-    if (!data.opportunitiesData) {
-      console.warn('No opportunities data in response:', data)
-      return []
-    }
-
-    const results = data.opportunitiesData.map((opp: any) => ({
-      id: opp.noticeId || crypto.randomUUID(),
-      title: opp.title || 'Untitled Opportunity',
-      description: opp.description || '',
-      agency: opp.departmentName || params.agency || null,
-      type: opp.type || 'Unknown',
-      posted_date: opp.postedDate || null,
-      value: opp.baseAndAllOptionsValue || null,
-      response_due: opp.responseDeadLine || null,
-      naics_code: opp.naicsCode || null,
-      set_aside: opp.setAside || null
-    }))
-
-    console.log('SAM.gov Transformed results:', {
-      count: results.length,
-      firstResult: results[0] || null,
-      timestamp: new Date().toISOString()
-    })
-
-    return results
+    // Make API request
+    const response = await makeApiRequest(requestUrl, apiKey)
+    
+    // Parse response
+    const data = await parseApiResponse(response)
+    
+    // Transform and return data
+    return transformEntityData(data.entityData || [])
   } catch (error) {
-    console.error('SAM.gov fetch error:', error)
+    console.error('Error fetching SAM.gov data:', error)
     throw error
   }
 }
