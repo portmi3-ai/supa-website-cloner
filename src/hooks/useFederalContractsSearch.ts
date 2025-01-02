@@ -24,16 +24,22 @@ export function useFederalContractsSearch(params: SearchParams) {
     queryFn: async () => {
       try {
         console.log('Testing RLS - Current user:', user?.id)
-        console.log('Fetching federal contracts with cleaned params:', {
-          searchTerm: params.searchTerm,
-          agency: params.agency,
-          startDate: params.startDate?.toISOString(),
-          endDate: params.endDate?.toISOString(),
-          page: params.page,
-          noticeType: params.noticeType,
-          activeOnly: params.activeOnly,
+
+        // Clean up parameters by removing undefined values and properly formatting dates
+        const cleanedParams = {
+          searchTerm: params.searchTerm || '*',
+          ...(params.agency && params.agency !== 'all' && { agency: params.agency }),
+          ...(params.startDate && { startDate: params.startDate.toISOString() }),
+          ...(params.endDate && { endDate: params.endDate.toISOString() }),
+          ...(params.noticeType && params.noticeType !== 'all' && { noticeType: params.noticeType }),
+          activeOnly: params.activeOnly ?? true,
+          page: params.page || 0,
           sortField: params.sortField,
-          sortDirection: params.sortDirection,
+          sortDirection: params.sortDirection
+        }
+
+        console.log('Fetching federal contracts with cleaned params:', {
+          ...cleanedParams,
           timestamp: new Date().toISOString()
         })
         
@@ -46,7 +52,7 @@ export function useFederalContractsSearch(params: SearchParams) {
         console.log('RLS Test - Result:', testData ? 'Success' : 'No data', 'Error:', testError)
         
         const { data, error } = await supabase.functions.invoke("searchFederalData", {
-          body: params
+          body: cleanedParams
         })
 
         if (error) {
