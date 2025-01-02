@@ -1,5 +1,5 @@
 export interface SearchParams {
-  searchTerm: string
+  searchTerm?: string
   agency?: string
   startDate?: string
   endDate?: string
