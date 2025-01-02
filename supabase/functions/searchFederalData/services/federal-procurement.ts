@@ -6,7 +6,11 @@ import { sortResults } from '../utils/sorting.ts'
 
 export async function searchFederalOpportunities(params: SearchParams): Promise<PaginatedResponse<FederalDataResult>> {
   console.log('Searching federal opportunities:', {
-    params,
+    searchTerm: params.searchTerm,
+    agency: params.agency,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    page: params.page,
     timestamp: new Date().toISOString()
   })
   
@@ -17,17 +21,20 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
 
     // Fetch from SAM.gov
     try {
-      const samResults = await fetchSAMData(
-        { ...params, page: params.page || 0 }, 
-        Deno.env.get('SAM_API_KEY') || ''
-      )
-      if (samResults && Array.isArray(samResults)) {
-        results = [...results, ...samResults]
-        successfulSources++
-        console.log('SAM.gov fetch successful:', {
-          count: samResults.length,
-          timestamp: new Date().toISOString()
-        })
+      const samApiKey = Deno.env.get('SAM_API_KEY')
+      if (!samApiKey) {
+        console.error('SAM API key is missing')
+        errors.push('SAM.gov: API key is missing')
+      } else {
+        const samResults = await fetchSAMData(params, samApiKey)
+        if (samResults && Array.isArray(samResults)) {
+          results = [...results, ...samResults]
+          successfulSources++
+          console.log('SAM.gov fetch successful:', {
+            count: samResults.length,
+            timestamp: new Date().toISOString()
+          })
+        }
       }
     } catch (samError) {
       const errorMessage = samError instanceof Error ? samError.message : 'Unknown error'
@@ -52,18 +59,35 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       logError('FPDS fetch', fpdsError)
     }
 
+    // Log overall search status
+    console.log('Search status:', {
+      successfulSources,
+      totalErrors: errors.length,
+      errors,
+      resultsCount: results.length,
+      timestamp: new Date().toISOString()
+    })
+
     if (successfulSources === 0) {
       throw new Error(`Failed to fetch data from all available sources: ${errors.join('; ')}`)
     }
 
+    // Apply search term filter
     if (params.searchTerm?.trim()) {
       const searchTermLower = params.searchTerm.toLowerCase().trim()
-      results = results.filter(result => 
+      const filteredResults = results.filter(result => 
         result.title?.toLowerCase().includes(searchTermLower) ||
         result.description?.toLowerCase().includes(searchTermLower)
       )
+      console.log('Search term filtering:', {
+        before: results.length,
+        after: filteredResults.length,
+        searchTerm: searchTermLower
+      })
+      results = filteredResults
     }
 
+    // Apply pagination
     const page = params.page || 0
     const limit = params.limit || 100
     const totalRecords = results.length
@@ -71,10 +95,14 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     const start = page * limit
     const end = start + limit
 
-    results = sortResults(results, params.sortField, params.sortDirection)
+    // Sort results if needed
+    if (params.sortField) {
+      results = sortResults(results, params.sortField, params.sortDirection)
+    }
+    
     const paginatedResults = results.slice(start, end)
 
-    console.log('Combined federal search results:', {
+    console.log('Final search results:', {
       total: totalRecords,
       currentPage: page,
       totalPages,
