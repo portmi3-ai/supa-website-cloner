@@ -1,5 +1,5 @@
 import { SearchParams, FederalDataResult } from '../types.ts'
-import { withRetry, parseErrorResponse, validateApiEndpoint, validateRequestParams, ApiError, getRateLimitDelay } from '../utils/apiRetry.ts'
+import { withRetry } from '../utils/apiRetry.ts'
 
 const SAM_API_URL = "https://api.sam.gov/opportunities/v2/search"
 
@@ -20,7 +20,12 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
       throw new Error('SAM API key configuration error')
     }
 
-    console.log('Using SAM.gov API with key:', apiKey.substring(0, 4) + '...')
+    console.log('SAM API key verification:', {
+      keyExists: !!apiKey,
+      keyLength: apiKey.length,
+      keyPrefix: apiKey.substring(0, 4) + '...',
+      timestamp: new Date().toISOString()
+    })
 
     // Build query parameters for SAM.gov API
     const queryParams = new URLSearchParams()
@@ -71,7 +76,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     })
 
     // Add delay to respect rate limits
-    await new Promise(resolve => setTimeout(resolve, getRateLimitDelay()))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
     const response = await withRetry(async () => {
       const res = await fetch(requestUrl, {
