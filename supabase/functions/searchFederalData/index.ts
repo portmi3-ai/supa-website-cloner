@@ -4,6 +4,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 const SAM_API_URL = "https://api.sam.gov/opportunities/v2/search"
 const FPDS_API_URL = "https://www.fpds.gov/ezsearch/FEEDS/ATOM"
 const GRANTS_API_URL = "https://www.grants.gov/grantsws/rest/opportunities/search"
+const DSBS_API_URL = "https://web.sba.gov/pro-net/search/dsp_dsbs.cfm"
+const GSA_API_URL = "https://www.gsaadvantage.gov/advantage/s/search.do"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +34,7 @@ serve(async (req) => {
 
     const samParams = new URLSearchParams({
       api_key: apiKey,
-      limit: '100', // Increased from 10 to get more results
+      limit: '100',
       offset: '0',
       postedFrom: formatDateForSAM(startDate) || formatDateForSAM(thirtyDaysAgo.toISOString()),
       postedTo: formatDateForSAM(endDate) || formatDateForSAM(today.toISOString()),
@@ -58,7 +60,12 @@ serve(async (req) => {
         'ED': 'DEPT OF EDUCATION',
         'DOL': 'DEPT OF LABOR',
         'STATE': 'DEPT OF STATE',
-        'TREAS': 'DEPT OF THE TREASURY'
+        'TREAS': 'DEPT OF THE TREASURY',
+        'GSA': 'GENERAL SERVICES ADMINISTRATION',
+        'SBA': 'SMALL BUSINESS ADMINISTRATION',
+        'PTAC': 'PROCUREMENT TECHNICAL ASSISTANCE CENTER',
+        'LOCAL': 'LOCAL GOVERNMENT',
+        'STATE_PROC': 'STATE PROCUREMENT'
       }
       
       const mappedAgency = agencyMapping[agency]
@@ -78,73 +85,107 @@ serve(async (req) => {
       console.log('Added active only filter')
     }
 
-    const requestUrl = `${SAM_API_URL}?${samParams.toString()}`
-    console.log('Making request to SAM.gov with URL:', requestUrl)
-    
-    // Fetch from SAM.gov
-    const samResponse = await fetch(requestUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Api-Key': apiKey,
-      }
-    })
-
-    if (!samResponse.ok) {
-      const errorText = await samResponse.text()
-      console.error('SAM.gov API error response:', errorText)
-      throw new Error(`SAM.gov API error: ${samResponse.status}\n${errorText}`)
-    }
-
-    const samData = await samResponse.json()
-    console.log('SAM.gov results count:', samData.totalRecords || 0)
-
-    // Transform SAM.gov results
-    const samResults = (samData.opportunitiesData || []).map((opportunity: any) => ({
-      id: opportunity.noticeId || crypto.randomUUID(),
-      title: opportunity.title || 'Untitled Opportunity',
-      description: opportunity.description || '',
-      agency: opportunity.department || opportunity.subtier || null,
-      type: opportunity.noticeType || 'Unknown',
-      posted_date: opportunity.postedDate || null,
-      naics_code: opportunity.naicsCode || null,
-      set_aside: opportunity.setAside || null,
-      response_due: opportunity.responseDeadLine || null,
-      value: opportunity.estimatedTotalValue || null,
-      source: 'SAM.gov'
-    }))
-
-    // Try to fetch from FPDS if no agency filter is applied or if it matches
-    let fpdsResults: any[] = []
-    if (!agency || agency === 'all') {
-      try {
-        const fpdsResponse = await fetch(`${FPDS_API_URL}?q=${searchTerm || ''}`)
-        if (fpdsResponse.ok) {
-          const fpdsText = await fpdsResponse.text()
-          const matches = fpdsText.match(/<entry>(.*?)<\/entry>/gs) || []
-          fpdsResults = matches.map(entry => {
-            const title = entry.match(/<title>(.*?)<\/title>/)?.[1] || ''
-            const id = entry.match(/<id>(.*?)<\/id>/)?.[1] || crypto.randomUUID()
-            const content = entry.match(/<content type="text">(.*?)<\/content>/)?.[1] || ''
-            return {
-              id,
-              title,
-              description: content,
-              agency: null,
-              type: 'Contract Award',
-              posted_date: new Date().toISOString(),
-              source: 'FPDS'
-            }
-          })
-          console.log('FPDS results count:', fpdsResults.length)
+    // Fetch from multiple sources in parallel
+    const [samResults, fpdsResults, grantsResults, dsbsResults, gsaResults] = await Promise.allSettled([
+      // SAM.gov
+      fetch(`${SAM_API_URL}?${samParams.toString()}`, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Api-Key': apiKey,
         }
-      } catch (error) {
-        console.error('FPDS fetch error:', error)
-      }
-    }
+      }).then(res => res.json()).then(data => 
+        (data.opportunitiesData || []).map((opp: any) => ({
+          id: opp.noticeId || crypto.randomUUID(),
+          title: opp.title || 'Untitled Opportunity',
+          description: opp.description || '',
+          agency: opp.department || opp.subtier || null,
+          type: opp.noticeType || 'Unknown',
+          posted_date: opp.postedDate || null,
+          naics_code: opp.naicsCode || null,
+          set_aside: opp.setAside || null,
+          response_due: opp.responseDeadLine || null,
+          value: opp.estimatedTotalValue || null,
+          source: 'SAM.gov'
+        }))
+      ).catch(error => {
+        console.error('SAM.gov fetch error:', error)
+        return []
+      }),
+
+      // FPDS
+      fetch(`${FPDS_API_URL}?q=${searchTerm || ''}`).then(res => res.text())
+        .then(text => {
+          const matches = text.match(/<entry>(.*?)<\/entry>/gs) || []
+          return matches.map(entry => ({
+            id: entry.match(/<id>(.*?)<\/id>/)?.[1] || crypto.randomUUID(),
+            title: entry.match(/<title>(.*?)<\/title>/)?.[1] || 'Untitled Contract',
+            description: entry.match(/<content type="text">(.*?)<\/content>/)?.[1] || '',
+            agency: null,
+            type: 'Contract Award',
+            posted_date: new Date().toISOString(),
+            source: 'FPDS'
+          }))
+        }).catch(error => {
+          console.error('FPDS fetch error:', error)
+          return []
+        }),
+
+      // Grants.gov
+      fetch(`${GRANTS_API_URL}?keyword=${searchTerm || ''}`).then(res => res.json())
+        .then(data => (data.opportunities || []).map((grant: any) => ({
+          id: grant.id || crypto.randomUUID(),
+          title: grant.title || 'Untitled Grant',
+          description: grant.description || '',
+          agency: grant.agency || null,
+          type: 'Grant',
+          posted_date: grant.postDate || null,
+          response_due: grant.closeDate || null,
+          value: grant.awardCeiling || null,
+          source: 'Grants.gov'
+        }))).catch(error => {
+          console.error('Grants.gov fetch error:', error)
+          return []
+        }),
+
+      // DSBS
+      fetch(`${DSBS_API_URL}?keyword=${searchTerm || ''}`).then(res => res.json())
+        .then(data => (data.results || []).map((business: any) => ({
+          id: business.dunsNumber || crypto.randomUUID(),
+          title: business.firmName || 'Unnamed Business',
+          description: business.description || '',
+          type: 'Small Business',
+          naics_code: business.primaryNaics || null,
+          source: 'DSBS'
+        }))).catch(error => {
+          console.error('DSBS fetch error:', error)
+          return []
+        }),
+
+      // GSA Advantage
+      fetch(`${GSA_API_URL}?q=${searchTerm || ''}`).then(res => res.json())
+        .then(data => (data.items || []).map((item: any) => ({
+          id: item.contractNumber || crypto.randomUUID(),
+          title: item.title || 'Untitled Item',
+          description: item.description || '',
+          agency: 'GSA',
+          type: 'GSA Schedule',
+          value: item.price || null,
+          source: 'GSA Advantage'
+        }))).catch(error => {
+          console.error('GSA Advantage fetch error:', error)
+          return []
+        })
+    ])
 
     // Combine results from all sources
-    const allResults = [...samResults, ...fpdsResults]
+    const allResults = [
+      ...(samResults.status === 'fulfilled' ? samResults.value : []),
+      ...(fpdsResults.status === 'fulfilled' ? fpdsResults.value : []),
+      ...(grantsResults.status === 'fulfilled' ? grantsResults.value : []),
+      ...(dsbsResults.status === 'fulfilled' ? dsbsResults.value : []),
+      ...(gsaResults.status === 'fulfilled' ? gsaResults.value : [])
+    ]
+
     console.log('Total combined results:', allResults.length)
 
     return new Response(
