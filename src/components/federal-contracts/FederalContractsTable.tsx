@@ -1,24 +1,12 @@
 import {
   Table,
   TableBody,
-  TableCell,
-  TableRow,
 } from "@/components/ui/table"
-import { format, isValid, parseISO } from "date-fns"
 import { FederalContractsTableHeader } from "./table/FederalContractsTableHeader"
 import { FederalContractsLoadingState } from "./table/FederalContractsLoadingState"
 import { FederalContractsEmptyState } from "./table/FederalContractsEmptyState"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import { Button } from "@/components/ui/button"
-import { Share2 } from "lucide-react"
+import { FederalContractsPagination } from "./table/FederalContractsPagination"
+import { FederalContractsTableRow } from "./table/FederalContractsTableRow"
 
 interface FederalContract {
   id: string
@@ -53,12 +41,6 @@ export function FederalContractsTable({
   sortDirection,
   onSort,
 }: FederalContractsTableProps) {
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "N/A"
-    const parsedDate = parseISO(dateString)
-    return isValid(parsedDate) ? format(parsedDate, "MMM d, yyyy") : "Invalid Date"
-  }
-
   if (isLoading) {
     return (
       <div className="rounded-md border">
@@ -79,35 +61,6 @@ export function FederalContractsTable({
     )
   }
 
-  const renderPaginationItems = () => {
-    const items = []
-    for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= currentPage - 1 && i <= currentPage + 1)
-      ) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              isActive={currentPage === i}
-              onClick={() => onPageChange(i)}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        )
-      } else if (i === currentPage - 2 || i === currentPage + 2) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationEllipsis />
-          </PaginationItem>
-        )
-      }
-    }
-    return items
-  }
-
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
@@ -119,55 +72,17 @@ export function FederalContractsTable({
           />
           <TableBody>
             {contracts.map((contract) => (
-              <TableRow key={contract.id} className="group">
-                <TableCell className="max-w-xl">
-                  <div className="space-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="font-medium">{contract.title}</div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100"
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      ID: {contract.id}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{contract.agency}</TableCell>
-                <TableCell>{contract.type}</TableCell>
-                <TableCell>{formatDate(contract.posted_date)}</TableCell>
-                <TableCell>{contract.naics_code}</TableCell>
-                <TableCell>{contract.set_aside || "N/A"}</TableCell>
-                <TableCell>{formatDate(contract.response_due)}</TableCell>
-              </TableRow>
+              <FederalContractsTableRow key={contract.id} contract={contract} />
             ))}
           </TableBody>
         </Table>
       </div>
 
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => onPageChange(currentPage - 1)}
-              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-          {renderPaginationItems()}
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => onPageChange(currentPage + 1)}
-              className={
-                currentPage === totalPages ? "pointer-events-none opacity-50" : ""
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <FederalContractsPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   )
 }
