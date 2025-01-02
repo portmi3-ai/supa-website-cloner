@@ -8,7 +8,6 @@ import { toast } from "sonner"
 
 const Index = () => {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
 
   // Fetch user profile data
   const { data: profile, isLoading } = useQuery({

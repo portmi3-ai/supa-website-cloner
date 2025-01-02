@@ -29,16 +29,16 @@ ChartJS.register(
 const Analytics = () => {
   const { user } = useAuth()
 
-  const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ["analytics", user?.id],
+  const { data: proposals, isLoading } = useQuery({
+    queryKey: ["proposals", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("analytics")
+        .from("proposals")
         .select("*")
         .eq("user_id", user?.id)
 
       if (error) {
-        toast.error("Error fetching analytics data")
+        toast.error("Error fetching proposals data")
         throw error
       }
 
@@ -48,17 +48,17 @@ const Analytics = () => {
   })
 
   const chartData = {
-    labels: analyticsData?.map((d) => d.date) || [],
+    labels: proposals?.map((p) => new Date(p.created_at).toLocaleDateString()) || [],
     datasets: [
       {
-        label: "Proposals Submitted",
-        data: analyticsData?.map((d) => d.proposals_submitted) || [],
+        label: "Proposals Created",
+        data: proposals?.map((_, index) => index + 1) || [],
         borderColor: "rgb(75, 192, 192)",
         tension: 0.1,
       },
       {
-        label: "Proposals Awarded",
-        data: analyticsData?.map((d) => d.proposals_awarded) || [],
+        label: "Proposals Completed",
+        data: proposals?.filter(p => p.status === "completed").map((_, index) => index + 1) || [],
         borderColor: "rgb(153, 102, 255)",
         tension: 0.1,
       },
@@ -102,37 +102,25 @@ const Analytics = () => {
               <div>
                 <h3 className="text-sm text-muted-foreground">Total Proposals</h3>
                 <p className="text-2xl font-bold">
-                  {analyticsData?.reduce(
-                    (sum, item) => sum + item.proposals_submitted,
-                    0
-                  ) || 0}
+                  {proposals?.length || 0}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm text-muted-foreground">Success Rate</h3>
                 <p className="text-2xl font-bold">
-                  {analyticsData
+                  {proposals && proposals.length > 0
                     ? `${Math.round(
-                        (analyticsData.reduce(
-                          (sum, item) => sum + item.proposals_awarded,
-                          0
-                        ) /
-                          analyticsData.reduce(
-                            (sum, item) => sum + item.proposals_submitted,
-                            0
-                          )) *
+                        (proposals.filter(p => p.status === "completed").length /
+                          proposals.length) *
                           100
                       )}%`
                     : "0%"}
                 </p>
               </div>
               <div>
-                <h3 className="text-sm text-muted-foreground">Total Awarded</h3>
+                <h3 className="text-sm text-muted-foreground">Completed</h3>
                 <p className="text-2xl font-bold">
-                  {analyticsData?.reduce(
-                    (sum, item) => sum + item.proposals_awarded,
-                    0
-                  ) || 0}
+                  {proposals?.filter(p => p.status === "completed").length || 0}
                 </p>
               </div>
             </div>
