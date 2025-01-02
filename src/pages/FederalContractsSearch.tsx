@@ -25,9 +25,9 @@ export function FederalContractsSearch() {
 
   const { toast } = useToast()
 
-  // Fetch initial results on component mount
+  // Reset to first page when search params change
   useEffect(() => {
-    setCurrentPage(1) // Reset to first page when search params change
+    setCurrentPage(1)
   }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange])
 
   const { data: contracts, isLoading, error } = useFederalContractsSearch({
@@ -47,7 +47,7 @@ export function FederalContractsSearch() {
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch contracts. Please try again.",
+        description: "Failed to fetch contracts. Please try adjusting your search criteria or try again later.",
         variant: "destructive",
       })
     }

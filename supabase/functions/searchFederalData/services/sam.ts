@@ -1,6 +1,8 @@
 import { SearchParams, FederalDataResult } from '../types.ts'
+import { withRetry } from '../utils/apiRetry.ts'
 
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
+const PAGE_SIZE = 50 // Reduced from 100 to 50 for better reliability
 
 export async function fetchSAMData(params: SearchParams, apiKey: string): Promise<FederalDataResult[]> {
   console.log('Fetching SAM.gov data with params:', {
@@ -15,69 +17,106 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       throw new Error('SAM API key is required')
     }
 
-    // Build query parameters
-    const queryParams = new URLSearchParams()
-    queryParams.append('api_key', apiKey)
-    
-    // Handle empty search query - use '*' as default
-    const searchQuery = params.searchTerm?.trim() || '*'
-    queryParams.append('q', searchQuery)
-    
-    // Add pagination parameters
-    const page = params.page || 0
-    const limit = 100 // Maximum allowed by SAM.gov
-    queryParams.append('page', page.toString())
-    queryParams.append('size', limit.toString())
+    const allResults: FederalDataResult[] = []
+    let currentPage = params.page || 0
+    let hasMorePages = true
 
-    // Add optional agency filter if provided
-    if (params.agency && params.agency !== 'all') {
-      queryParams.append('organizationId', params.agency)
-    }
-
-    const requestUrl = `${SAM_API_URL}?${queryParams}`
-    console.log('Making SAM.gov API request:', {
-      url: SAM_API_URL,
-      query: searchQuery,
-      hasAgency: !!params.agency,
-      page,
-      limit,
-    })
-    
-    const response = await fetch(requestUrl, {
-      headers: {
-        'Accept': 'application/json'
+    while (hasMorePages) {
+      const results = await fetchSAMDataPage(params, apiKey, currentPage)
+      
+      if (!results || results.length === 0) {
+        hasMorePages = false
+        break
       }
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('SAM.gov API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        requestUrl: requestUrl.replace(apiKey, '[REDACTED]'),
-      })
-      throw new Error(`SAM.gov API error: ${response.status} ${response.statusText}\n${errorText}`)
+
+      allResults.push(...results)
+      
+      // Stop if we have enough results or reached the end
+      if (results.length < PAGE_SIZE || allResults.length >= (params.limit || 100)) {
+        hasMorePages = false
+      } else {
+        currentPage++
+      }
     }
-    
-    const data = await response.json()
-    console.log('SAM.gov results count:', data.totalRecords || 0)
-    
-    // Map API response to FederalDataResult type
-    return (data.entityData || []).map((entity: any) => ({
-      id: entity.ueiSAM || crypto.randomUUID(),
-      title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
-      description: `${entity.entityRegistration?.businessType || ''} - ${entity.entityRegistration?.physicalAddress?.city || ''}, ${entity.entityRegistration?.physicalAddress?.stateOrProvinceCode || ''}`,
-      funding_agency: null,
-      funding_amount: null,
-      status: 'active',
-      source: 'SAM.gov',
-      entity_type: entity.entityRegistration?.businessType || null,
-      location: `${entity.entityRegistration?.physicalAddress?.city || ''}, ${entity.entityRegistration?.physicalAddress?.stateOrProvinceCode || ''}`,
-      registration_status: entity.entityRegistration?.registrationStatus || null
-    }))
+
+    // Trim results to match requested limit
+    if (params.limit && allResults.length > params.limit) {
+      return allResults.slice(0, params.limit)
+    }
+
+    return allResults
   } catch (error) {
     console.error('SAM.gov fetch error:', error)
-    return []
+    throw error // Let the error handler in the Edge Function handle this
   }
+}
+
+async function fetchSAMDataPage(params: SearchParams, apiKey: string, page: number): Promise<FederalDataResult[]> {
+  const queryParams = new URLSearchParams()
+  queryParams.append('api_key', apiKey)
+  queryParams.append('q', params.searchTerm?.trim() || '*')
+  queryParams.append('page', page.toString())
+  queryParams.append('size', PAGE_SIZE.toString())
+
+  if (params.agency && params.agency !== 'all') {
+    queryParams.append('organizationId', params.agency)
+  }
+
+  const requestUrl = `${SAM_API_URL}?${queryParams}`
+  console.log('Making SAM.gov API request:', {
+    url: SAM_API_URL,
+    query: params.searchTerm?.trim() || '*',
+    hasAgency: !!params.agency,
+    page,
+    size: PAGE_SIZE,
+  })
+
+  const response = await withRetry(
+    async () => {
+      const res = await fetch(requestUrl, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('SAM.gov API error:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorText,
+          timestamp: new Date().toISOString(),
+          requestUrl: requestUrl.replace(apiKey, '[REDACTED]'),
+        })
+        throw new Error(`SAM.gov API error: ${res.status} ${res.statusText}\n${errorText}`)
+      }
+
+      return res
+    },
+    {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+    }
+  )
+
+  const data = await response.json()
+  console.log('SAM.gov page results:', {
+    page,
+    count: data.entityData?.length || 0,
+    totalRecords: data.totalRecords || 0,
+  })
+
+  return (data.entityData || []).map((entity: any) => ({
+    id: entity.ueiSAM || crypto.randomUUID(),
+    title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
+    description: `${entity.entityRegistration?.businessType || ''} - ${entity.entityRegistration?.physicalAddress?.city || ''}, ${entity.entityRegistration?.physicalAddress?.stateOrProvinceCode || ''}`,
+    funding_agency: null,
+    funding_amount: null,
+    status: 'active',
+    source: 'SAM.gov',
+    entity_type: entity.entityRegistration?.businessType || null,
+    location: `${entity.entityRegistration?.physicalAddress?.city || ''}, ${entity.entityRegistration?.physicalAddress?.stateOrProvinceCode || ''}`,
+    registration_status: entity.entityRegistration?.registrationStatus || null
+  }))
 }

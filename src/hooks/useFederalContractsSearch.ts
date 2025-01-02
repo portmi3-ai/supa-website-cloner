@@ -23,9 +23,11 @@ export function useFederalContractsSearch(params: SearchParams) {
     queryKey: ["federal-contracts", params],
     queryFn: async () => {
       try {
+        console.log('Fetching federal contracts with params:', params)
+        
         const { data, error } = await supabase.functions.invoke("searchFederalData", {
           body: {
-            searchTerm: params.searchTerm,
+            searchTerm: params.searchTerm || '*', // Always send a search term
             agency: params.agency,
             startDate: params.startDate?.toISOString(),
             endDate: params.endDate?.toISOString(),
@@ -34,11 +36,19 @@ export function useFederalContractsSearch(params: SearchParams) {
             activeOnly: params.activeOnly,
             sortField: params.sortField,
             sortDirection: params.sortDirection,
-            limit: 100 // Maximum allowed by SAM.gov
+            limit: 50 // Match the SAM.gov page size
           }
         })
 
-        if (error) throw error
+        if (error) {
+          console.error('Error from Edge Function:', error)
+          throw error
+        }
+        
+        if (!data || !data.data) {
+          console.error('Invalid response format:', data)
+          throw new Error('Invalid response format from server')
+        }
         
         console.log('Search results:', {
           totalRecords: data.totalRecords,
@@ -58,5 +68,7 @@ export function useFederalContractsSearch(params: SearchParams) {
       }
     },
     enabled: true, // Always enabled to show initial results
+    staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
+    retry: 2, // Retry failed requests twice
   })
 }
