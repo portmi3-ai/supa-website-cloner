@@ -2,6 +2,7 @@ import { FederalDataResult, SearchParams } from '../types.ts'
 import { withRetry, ApiError } from '../utils/apiRetry.ts'
 import { corsHeaders } from '../cors.ts'
 
+// Updated to use the correct SAM.gov opportunities endpoint
 const BASE_URL = 'https://api.sam.gov/opportunities/v2/search'
 
 export async function searchFederalOpportunities(params: SearchParams): Promise<FederalDataResult[]> {
@@ -22,25 +23,27 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30))
     
     // Build query parameters with proper formatting
-    const queryParams = new URLSearchParams({
-      api_key: apiKey,
-      postedFrom: params.startDate || thirtyDaysAgo.toISOString().split('T')[0],
-      postedTo: params.endDate || new Date().toISOString().split('T')[0],
-      limit: String(Math.min(params.limit || 100, 100)), // Cap at 100 results
-      offset: String((params.page || 0) * (params.limit || 100)),
-    })
+    const queryParams = new URLSearchParams()
+    
+    // Add required parameters
+    queryParams.append('api_key', apiKey)
+    queryParams.append('postedFrom', params.startDate || thirtyDaysAgo.toISOString().split('T')[0])
+    queryParams.append('postedTo', params.endDate || new Date().toISOString().split('T')[0])
+    queryParams.append('limit', String(Math.min(params.limit || 100, 100)))
+    queryParams.append('offset', String((params.page || 0) * (params.limit || 100)))
 
-    // Only add optional parameters if they exist and are valid
+    // Add optional parameters if they exist
     if (params.searchTerm && params.searchTerm !== '*') {
       queryParams.append('keywords', params.searchTerm)
     }
     if (params.agency) {
-      queryParams.append('department', params.agency)
+      queryParams.append('agency', params.agency)
     }
 
     const requestUrl = `${BASE_URL}?${queryParams.toString()}`
     console.log('Making SAM.gov API request:', {
       url: requestUrl,
+      params: Object.fromEntries(queryParams.entries()),
       timestamp: new Date().toISOString()
     })
 
@@ -59,6 +62,7 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
           status: res.status,
           statusText: res.statusText,
           error: errorText,
+          headers: Object.fromEntries(res.headers.entries()),
           timestamp: new Date().toISOString()
         })
         
@@ -98,10 +102,11 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
 
     // Return empty array if no results
     if (!response.opportunitiesData || response.opportunitiesData.length === 0) {
+      console.log('No results found for the given search criteria')
       return []
     }
 
-    return response.opportunitiesData.map((item: any) => ({
+    const transformedData = response.opportunitiesData.map((item: any) => ({
       id: item.noticeId,
       title: item.title,
       agency: item.department,
@@ -113,6 +118,9 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       set_aside: item.setAside?.[0]?.type || null,
       source: 'sam.gov'
     }))
+
+    console.log(`Transformed ${transformedData.length} results successfully`)
+    return transformedData
   } catch (error) {
     console.error('Error in searchFederalOpportunities:', {
       error: error instanceof Error ? error.message : String(error),
