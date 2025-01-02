@@ -18,23 +18,25 @@ serve(async (req) => {
       throw new Error('SAM API configuration is incomplete')
     }
 
+    // Format dates as MM/dd/yyyy for SAM.gov API
+    const formatDateForSAM = (dateString: string | undefined) => {
+      if (!dateString) return undefined
+      const date = new Date(dateString)
+      return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`
+    }
+
     // Get current date and 30 days ago for default date range
     const today = new Date()
     const thirtyDaysAgo = new Date(today)
     thirtyDaysAgo.setDate(today.getDate() - 30)
-
-    // Format dates as YYYY-MM-DD
-    const formatDate = (date: Date) => {
-      return date.toISOString().split('T')[0]
-    }
 
     // Build SAM.gov query parameters
     const samParams = new URLSearchParams({
       api_key: apiKey,
       limit: '10',
       offset: '0',
-      postedFrom: startDate ? startDate : formatDate(thirtyDaysAgo),
-      postedTo: endDate ? endDate : formatDate(today),
+      postedFrom: formatDateForSAM(startDate) || formatDateForSAM(thirtyDaysAgo.toISOString()),
+      postedTo: formatDateForSAM(endDate) || formatDateForSAM(today.toISOString()),
     })
 
     // Add search term if provided (but don't require it)
