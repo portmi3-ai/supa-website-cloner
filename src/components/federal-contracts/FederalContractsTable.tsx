@@ -64,7 +64,11 @@ export function FederalContractsTable({
   if (!contracts?.length) {
     return (
       <div className="rounded-md border">
-        <FederalContractsEmptyState />
+        <FederalContractsEmptyState
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={onSort}
+        />
       </div>
     )
   }

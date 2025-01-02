@@ -9,6 +9,10 @@ interface SearchParams {
   startDate?: Date
   endDate?: Date
   page?: number
+  noticeType?: string
+  activeOnly?: boolean
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
 }
 
 export function useFederalContractsSearch(params: SearchParams) {
@@ -25,7 +29,11 @@ export function useFederalContractsSearch(params: SearchParams) {
             agency: params.agency,
             startDate: params.startDate?.toISOString(),
             endDate: params.endDate?.toISOString(),
-            page: params.page || 1
+            page: params.page || 1,
+            noticeType: params.noticeType,
+            activeOnly: params.activeOnly,
+            sortField: params.sortField,
+            sortDirection: params.sortDirection
           }
         })
 
