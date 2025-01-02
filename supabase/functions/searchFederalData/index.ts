@@ -18,13 +18,23 @@ serve(async (req) => {
       throw new Error('SAM API configuration is incomplete')
     }
 
+    // Get current date and 30 days ago for default date range
+    const today = new Date()
+    const thirtyDaysAgo = new Date(today)
+    thirtyDaysAgo.setDate(today.getDate() - 30)
+
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date: Date) => {
+      return date.toISOString().split('T')[0]
+    }
+
     // Build SAM.gov query parameters
     const samParams = new URLSearchParams({
       api_key: apiKey,
       limit: '10',
       offset: '0',
-      postedFrom: startDate || '',
-      postedTo: endDate || '',
+      postedFrom: startDate ? startDate : formatDate(thirtyDaysAgo),
+      postedTo: endDate ? endDate : formatDate(today),
     })
 
     // Add search term if provided
