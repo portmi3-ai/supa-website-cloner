@@ -16,10 +16,6 @@ serve(async (req) => {
     const params = await req.json()
     logSearchParameters(params)
 
-    if (!params.searchTerm) {
-      throw new Error('Search term is required')
-    }
-
     // Validate and clean up search parameters
     const cleanParams = {
       searchTerm: params.searchTerm || '*', // Use '*' as default if not provided
@@ -35,6 +31,7 @@ serve(async (req) => {
     console.log('Cleaned search parameters:', cleanParams)
 
     const results = await aggregateSearchResults(cleanParams)
+    console.log('Search results count:', results?.length || 0)
 
     const response = {
       data: results || [],
