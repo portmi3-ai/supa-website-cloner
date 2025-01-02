@@ -31,9 +31,8 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     const queryParams = new URLSearchParams()
     
     // Add keyword search - ensure we're not sending empty strings
-    const searchQuery = params.searchTerm?.trim() || '*'
-    if (searchQuery !== '*') {
-      queryParams.append('keywords', searchQuery)
+    if (params.searchTerm && params.searchTerm !== '*') {
+      queryParams.append('keywords', params.searchTerm)
     }
     
     // Add agency filter if specified
@@ -84,7 +83,8 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'User-Agent': 'ContractSearchApp/1.0'
+          'User-Agent': 'ContractSearchApp/1.0',
+          'api_key': apiKey
         }
       })
       
