@@ -8,7 +8,7 @@ import { Contract } from "@/types/contracts.types"
 import { ContractStatusBadge } from "./ContractStatusBadge"
 import { format } from "date-fns"
 import { useTableSort } from "@/hooks/useTableSort"
-import { TableHeader } from "./table/TableHeader"
+import { ContractsTableHeader } from "./table/TableHeader"
 
 interface ContractsTableProps {
   contracts: Contract[]
@@ -20,7 +20,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
 
   return (
     <Table>
-      <TableHeader
+      <ContractsTableHeader
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}

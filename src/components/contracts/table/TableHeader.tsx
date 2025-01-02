@@ -1,15 +1,15 @@
-import { TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TableHead, TableHeader as ShadcnTableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react"
 import { SortField, SortDirection } from "@/hooks/useTableSort"
 
-interface TableHeaderProps {
+interface ContractsTableHeaderProps {
   sortField: SortField
   sortDirection: SortDirection
   onSort: (field: SortField) => void
 }
 
-export function TableHeader({ sortField, sortDirection, onSort }: TableHeaderProps) {
+export function ContractsTableHeader({ sortField, sortDirection, onSort }: ContractsTableHeaderProps) {
   const getSortIcon = (field: SortField) => {
     if (field !== sortField) return <ArrowUpDown className="ml-2 h-4 w-4" />
     return sortDirection === "asc" ? (
@@ -20,7 +20,7 @@ export function TableHeader({ sortField, sortDirection, onSort }: TableHeaderPro
   }
 
   return (
-    <TableHeader>
+    <ShadcnTableHeader>
       <TableRow>
         <TableHead>
           <Button
@@ -83,6 +83,6 @@ export function TableHeader({ sortField, sortDirection, onSort }: TableHeaderPro
           </Button>
         </TableHead>
       </TableRow>
-    </TableHeader>
+    </ShadcnTableHeader>
   )
 }
