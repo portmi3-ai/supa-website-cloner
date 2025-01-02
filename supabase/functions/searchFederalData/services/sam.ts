@@ -1,5 +1,5 @@
 import { SearchParams } from '../types.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from '../cors.ts'
 
 const SAM_API_URL = 'https://api.sam.gov/entity-information/v3/entities'
 
