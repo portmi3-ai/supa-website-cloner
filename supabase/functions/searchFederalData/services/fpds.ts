@@ -83,8 +83,7 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'User-Agent': 'ContractSearchApp/1.0',
-          'api_key': apiKey
+          'User-Agent': 'ContractSearchApp/1.0'
         }
       })
       
