@@ -14,10 +14,10 @@ interface AgencySelectProps {
 export function AgencySelect({ value, onChange }: AgencySelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full md:w-[200px]">
+      <SelectTrigger className="w-full md:w-[200px] glass-card">
         <SelectValue placeholder="Select agency" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="glass-card">
         <SelectItem value="all">All Sources</SelectItem>
         
         {/* Federal Departments */}
