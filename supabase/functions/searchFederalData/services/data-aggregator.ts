@@ -1,6 +1,6 @@
-import { searchStateOpportunities } from './state-procurement'
-import { searchLocalOpportunities } from './local-procurement'
-import { searchFederalOpportunities } from './federal-procurement'
+import { searchStateOpportunities } from './state-procurement.ts'
+import { searchLocalOpportunities } from './local-procurement.ts'
+import { searchFederalOpportunities } from './federal-procurement.ts'
 
 export async function aggregateSearchResults(params: {
   searchTerm?: string

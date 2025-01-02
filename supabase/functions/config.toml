@@ -1,0 +1,4 @@
+project_id = "tcskoshdkyilkxtxwsuq"
+
+[global.env]
+SAM_API_KEY = "env(SAM_API_KEY)"
