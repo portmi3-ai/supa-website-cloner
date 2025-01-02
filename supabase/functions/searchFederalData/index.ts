@@ -10,8 +10,8 @@ serve(async (req) => {
   }
 
   try {
-    const { searchTerm, agency, startDate, endDate } = await req.json()
-    console.log('Searching federal data with params:', { searchTerm, agency, startDate, endDate })
+    const { searchTerm, agency, startDate, endDate, noticeType, activeOnly } = await req.json()
+    console.log('Searching federal data with params:', { searchTerm, agency, startDate, endDate, noticeType, activeOnly })
 
     const apiKey = Deno.env.get('SAM_API_KEY')
     if (!apiKey) {
@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error('SAM API configuration is incomplete')
     }
 
-    // Fetch from SAM.gov
+    // Build SAM.gov query parameters
     const samParams = new URLSearchParams({
       api_key: apiKey,
       q: searchTerm || '*',
@@ -27,15 +27,30 @@ serve(async (req) => {
       size: '10',
     })
 
+    // Add agency filter if specified
     if (agency && agency !== 'all') {
       samParams.append('organizationId', agency)
+      console.log('Added agency filter:', agency)
     }
 
-    console.log('Making request to SAM.gov')
+    // Add notice type filter if specified
+    if (noticeType && noticeType !== 'all') {
+      samParams.append('noticeType', noticeType)
+      console.log('Added notice type filter:', noticeType)
+    }
+
+    // Add active only filter if specified
+    if (activeOnly) {
+      samParams.append('active', 'true')
+      console.log('Added active only filter')
+    }
+
+    console.log('Making request to SAM.gov with params:', samParams.toString())
     const samResponse = await fetch(`${SAM_API_URL}?${samParams.toString()}`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-Api-Key': apiKey
       }
     })
 
@@ -52,13 +67,15 @@ serve(async (req) => {
       id: entity.entityRegistration?.ueiSAM || crypto.randomUUID(),
       title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
       description: entity.entityRegistration?.purposeOfRegistration || '',
-      funding_agency: entity.entityRegistration?.agencyBusinessPurposeCode || null,
-      funding_amount: null,
-      status: 'active',
-      source: 'SAM.gov'
+      agency: entity.entityRegistration?.agencyBusinessPurposeCode || null,
+      type: entity.entityRegistration?.businessTypes?.[0] || 'Unknown',
+      posted_date: entity.entityRegistration?.registrationDate || null,
+      naics_code: entity.entityRegistration?.primaryNaics || null,
+      set_aside: entity.entityRegistration?.businessTypeList?.[0] || null,
+      response_due: entity.entityRegistration?.registrationExpirationDate || null,
     }))
 
-    // Fetch from USASpending.gov
+    // Fetch from USASpending.gov with date filters
     const usaSpendingBody = {
       filters: {
         keywords: [searchTerm],
@@ -94,16 +111,18 @@ serve(async (req) => {
         id: award.generated_internal_id || crypto.randomUUID(),
         title: award.recipient_name || 'Unnamed Award',
         description: award.description || '',
-        funding_agency: award.awarding_agency_name || null,
-        funding_amount: award.obligated_amount || null,
-        status: award.status || 'unknown',
-        source: 'USASpending.gov'
+        agency: award.awarding_agency_name || null,
+        type: award.type || 'Unknown',
+        posted_date: award.action_date || null,
+        naics_code: award.naics_code || null,
+        set_aside: null,
+        response_due: null
       }))
     } else {
       console.error('USASpending.gov API error:', usaSpendingResponse.status)
     }
 
-    // Combine results
+    // Combine and filter results based on active only if specified
     const combinedResults = [...samResults, ...usaSpendingResults]
     console.log('Total combined results:', combinedResults.length)
 
