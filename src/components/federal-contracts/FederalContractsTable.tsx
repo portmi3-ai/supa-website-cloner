@@ -45,7 +45,7 @@ export function FederalContractsTable({
 }: FederalContractsTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-md border border-border/50 backdrop-blur-sm">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm animate-pulse">
         <FederalContractsLoadingState />
       </div>
     )
@@ -53,7 +53,7 @@ export function FederalContractsTable({
 
   if (error || !contracts?.length) {
     return (
-      <div className="rounded-md border border-border/50 backdrop-blur-sm">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm animate-fade-in">
         <FederalContractsEmptyState
           sortField={sortField}
           sortDirection={sortDirection}
@@ -65,15 +65,15 @@ export function FederalContractsTable({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border border-border/50 backdrop-blur-sm overflow-hidden">
+    <div className="space-y-4 animate-scale-in">
+      <div className="rounded-md border border-border/50 backdrop-blur-sm overflow-hidden glass-card">
         <Table>
           <FederalContractsTableHeader
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={onSort}
           />
-          <TableBody>
+          <TableBody className="relative">
             {contracts.map((contract) => (
               <FederalContractsTableRow key={contract.id} contract={contract} />
             ))}
@@ -81,11 +81,13 @@ export function FederalContractsTable({
         </Table>
       </div>
 
-      <FederalContractsPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-      />
+      <div className="flex justify-center">
+        <FederalContractsPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
+      </div>
     </div>
   )
 }
