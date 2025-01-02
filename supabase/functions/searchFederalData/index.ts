@@ -46,8 +46,19 @@ serve(async (req) => {
 
     // Add agency filter if specified
     if (agency && agency !== 'all') {
-      samParams.append('department', agency)
-      console.log('Added agency filter:', agency)
+      // Map frontend agency codes to SAM.gov department codes
+      const agencyMapping: { [key: string]: string } = {
+        'DOD': 'DEPT OF DEFENSE',
+        'NASA': 'NATIONAL AERONAUTICS AND SPACE ADMINISTRATION',
+        'DOE': 'DEPT OF ENERGY',
+        'HHS': 'DEPT OF HEALTH AND HUMAN SERVICES'
+      }
+      
+      const mappedAgency = agencyMapping[agency]
+      if (mappedAgency) {
+        samParams.append('department', mappedAgency)
+        console.log('Added agency filter:', mappedAgency)
+      }
     }
 
     // Add notice type filter if specified
