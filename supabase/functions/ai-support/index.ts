@@ -7,12 +7,19 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
     const { messages } = await req.json()
+
+    if (!messages || !Array.isArray(messages)) {
+      throw new Error('Invalid messages format')
+    }
+
+    console.log('Sending request to OpenAI with messages:', messages)
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -35,13 +42,27 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('OpenAI API error:', errorData)
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`)
+    }
+
     const data = await response.json()
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected OpenAI API response format:', data)
+      throw new Error('Invalid response format from OpenAI API')
+    }
+
+    console.log('Received successful response from OpenAI')
+    
     return new Response(
       JSON.stringify({ response: data.choices[0].message.content }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in AI support function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
