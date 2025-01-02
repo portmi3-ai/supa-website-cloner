@@ -57,8 +57,8 @@ const Analytics = () => {
         tension: 0.1,
       },
       {
-        label: "Proposals Completed",
-        data: proposals?.filter(p => p.status === "completed").map((_, index) => index + 1) || [],
+        label: "Proposals Awarded",
+        data: proposals?.filter(p => p.status === "awarded").map((_, index) => index + 1) || [],
         borderColor: "rgb(153, 102, 255)",
         tension: 0.1,
       },
@@ -110,7 +110,7 @@ const Analytics = () => {
                 <p className="text-2xl font-bold">
                   {proposals && proposals.length > 0
                     ? `${Math.round(
-                        (proposals.filter(p => p.status === "completed").length /
+                        (proposals.filter(p => p.status === "awarded").length /
                           proposals.length) *
                           100
                       )}%`
@@ -118,9 +118,9 @@ const Analytics = () => {
                 </p>
               </div>
               <div>
-                <h3 className="text-sm text-muted-foreground">Completed</h3>
+                <h3 className="text-sm text-muted-foreground">Awarded</h3>
                 <p className="text-2xl font-bold">
-                  {proposals?.filter(p => p.status === "completed").length || 0}
+                  {proposals?.filter(p => p.status === "awarded").length || 0}
                 </p>
               </div>
             </div>

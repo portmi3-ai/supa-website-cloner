@@ -12,8 +12,11 @@ import { useAuth } from "@/hooks/useAuth"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 export { useAuth }
+
+const queryClient = new QueryClient()
 
 function RouteError() {
   return (
@@ -69,10 +72,12 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <RouterProvider router={router} />
-        <Toaster />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <RouterProvider router={router} />
+          <Toaster />
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   )
 }
