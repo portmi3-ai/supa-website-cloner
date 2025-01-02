@@ -51,14 +51,18 @@ async function makeApiRequest(url: string, apiKey: string): Promise<Response> {
   console.log('Making SAM.gov API request to:', url)
   
   try {
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+      ...corsHeaders
+    }
+
+    console.log('Request headers:', JSON.stringify(headers, null, 2))
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'apiKey': apiKey,
-        ...corsHeaders
-      }
+      headers
     })
 
     if (!response.ok) {
@@ -66,7 +70,8 @@ async function makeApiRequest(url: string, apiKey: string): Promise<Response> {
       console.error('SAM.gov API error response:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: errorText,
+        headers: Object.fromEntries(response.headers.entries())
       })
       throw new Error(`SAM.gov API error: ${response.status} ${errorText}`)
     }
@@ -83,7 +88,8 @@ async function parseApiResponse(response: Response): Promise<any> {
     const data = await response.json()
     console.log('SAM.gov API response:', {
       totalRecords: data.totalRecords,
-      recordCount: data.entityData?.length || 0
+      recordCount: data.entityData?.length || 0,
+      firstRecord: data.entityData?.[0] || null
     })
     return data
   } catch (error) {
@@ -113,6 +119,12 @@ export async function fetchSAMData(params: SearchParams, apiKey: string) {
     const queryParams = buildQueryParams(params)
     const requestUrl = `${SAM_API_URL}?${queryParams}`
 
+    console.log('SAM.gov API request details:', {
+      url: requestUrl,
+      params: Object.fromEntries(queryParams.entries()),
+      timestamp: new Date().toISOString()
+    })
+
     // Make API request
     const response = await makeApiRequest(requestUrl, apiKey)
     
@@ -120,7 +132,15 @@ export async function fetchSAMData(params: SearchParams, apiKey: string) {
     const data = await parseApiResponse(response)
     
     // Transform and return data
-    return transformEntityData(data.entityData || [])
+    const transformedData = transformEntityData(data.entityData || [])
+    
+    console.log('SAM.gov data transformation complete:', {
+      originalCount: data.entityData?.length || 0,
+      transformedCount: transformedData.length,
+      timestamp: new Date().toISOString()
+    })
+
+    return transformedData
   } catch (error) {
     console.error('Error fetching SAM.gov data:', error)
     throw error

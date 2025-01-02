@@ -18,14 +18,14 @@ serve(async (req) => {
 
     // Validate and clean up search parameters
     const cleanParams = {
-      searchTerm: params.searchTerm || '*', // Use '*' as default if not provided
+      searchTerm: params.searchTerm || '*',
       agency: params.agency,
       startDate: params.startDate,
       endDate: params.endDate,
       noticeType: params.noticeType,
       activeOnly: params.activeOnly ?? true,
       page: params.page || 0,
-      limit: Math.min(params.limit || 100, 100), // Cap at 100 results per page, default to 100
+      limit: Math.min(params.limit || 100, 100), // Cap at 100 results per page
     }
 
     console.log('Cleaned search parameters:', cleanParams)
