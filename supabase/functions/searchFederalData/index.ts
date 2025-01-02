@@ -16,6 +16,10 @@ serve(async (req) => {
     const params = await req.json()
     logSearchParameters(params)
 
+    if (!params.searchTerm) {
+      throw new Error('Search term is required')
+    }
+
     // Validate and clean up search parameters
     const cleanParams = {
       searchTerm: params.searchTerm || '*', // Use '*' as default if not provided
@@ -25,7 +29,7 @@ serve(async (req) => {
       noticeType: params.noticeType,
       activeOnly: params.activeOnly ?? true,
       page: params.page || 0,
-      limit: Math.min(params.limit || 50, 100), // Cap at 100 results per page
+      limit: Math.min(params.limit || 100, 100), // Cap at 100 results per page, default to 100
     }
 
     console.log('Cleaned search parameters:', cleanParams)
@@ -34,7 +38,7 @@ serve(async (req) => {
 
     const response = {
       data: results || [],
-      totalPages: Math.ceil((results?.length || 0) / (cleanParams.limit || 50)),
+      totalPages: Math.ceil((results?.length || 0) / (cleanParams.limit || 100)),
       currentPage: cleanParams.page,
       totalRecords: results?.length || 0
     }
