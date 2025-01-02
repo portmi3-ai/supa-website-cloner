@@ -10,9 +10,19 @@ export async function fetchSAMData(params: SearchParams, apiKey: string): Promis
       throw new Error('SAM API key is required')
     }
 
-    const response = await fetch(`${SAM_API_URL}?q=${params.searchTerm}`, {
+    // Ensure we have a valid search query, use '*' for empty searches
+    const searchQuery = params.searchTerm?.trim() || '*'
+    const queryParams = new URLSearchParams({
+      q: searchQuery,
+      api_key: apiKey,
+      page: '0',
+      size: '100' // Increased from 10 to get more results
+    })
+
+    console.log('Making SAM.gov API request with query:', searchQuery)
+    
+    const response = await fetch(`${SAM_API_URL}?${queryParams}`, {
       headers: {
-        'X-Api-Key': apiKey,
         'Accept': 'application/json'
       }
     })
