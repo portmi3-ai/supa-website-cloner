@@ -31,6 +31,12 @@ export function ProposalStatusBadge({ status }: ProposalStatusBadgeProps) {
     },
   }
 
+  // Add safety check for invalid status values
+  if (!(status in variants)) {
+    console.warn(`Invalid proposal status: ${status}`)
+    return <Badge variant="outline">Unknown</Badge>
+  }
+
   const { label, variant } = variants[status]
 
   return <Badge variant={variant}>{label}</Badge>
