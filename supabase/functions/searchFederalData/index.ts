@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from '../_shared/cors.ts'
 
 const SAM_API_URL = "https://api.sam.gov/opportunities/v2/search"
+const FPDS_API_URL = "https://www.fpds.gov/ezsearch/FEEDS/ATOM"
+const GRANTS_API_URL = "https://www.grants.gov/grantsws/rest/opportunities/search"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,40 +20,45 @@ serve(async (req) => {
       throw new Error('SAM API configuration is incomplete')
     }
 
-    // Format dates as MM/dd/yyyy for SAM.gov API
     const formatDateForSAM = (dateString: string | undefined) => {
       if (!dateString) return undefined
       const date = new Date(dateString)
       return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`
     }
 
-    // Get current date and 30 days ago for default date range
     const today = new Date()
     const thirtyDaysAgo = new Date(today)
     thirtyDaysAgo.setDate(today.getDate() - 30)
 
-    // Build SAM.gov query parameters
     const samParams = new URLSearchParams({
       api_key: apiKey,
-      limit: '10',
+      limit: '100', // Increased from 10 to get more results
       offset: '0',
       postedFrom: formatDateForSAM(startDate) || formatDateForSAM(thirtyDaysAgo.toISOString()),
       postedTo: formatDateForSAM(endDate) || formatDateForSAM(today.toISOString()),
     })
 
-    // Add search term if provided (but don't require it)
     if (searchTerm) {
       samParams.append('keywords', searchTerm)
     }
 
-    // Add agency filter if specified
     if (agency && agency !== 'all') {
-      // Map frontend agency codes to SAM.gov department codes
       const agencyMapping: { [key: string]: string } = {
         'DOD': 'DEPT OF DEFENSE',
         'NASA': 'NATIONAL AERONAUTICS AND SPACE ADMINISTRATION',
         'DOE': 'DEPT OF ENERGY',
-        'HHS': 'DEPT OF HEALTH AND HUMAN SERVICES'
+        'HHS': 'DEPT OF HEALTH AND HUMAN SERVICES',
+        'DHS': 'DEPT OF HOMELAND SECURITY',
+        'DOT': 'DEPT OF TRANSPORTATION',
+        'VA': 'DEPT OF VETERANS AFFAIRS',
+        'DOI': 'DEPT OF THE INTERIOR',
+        'EPA': 'ENVIRONMENTAL PROTECTION AGENCY',
+        'USDA': 'DEPT OF AGRICULTURE',
+        'DOC': 'DEPT OF COMMERCE',
+        'ED': 'DEPT OF EDUCATION',
+        'DOL': 'DEPT OF LABOR',
+        'STATE': 'DEPT OF STATE',
+        'TREAS': 'DEPT OF THE TREASURY'
       }
       
       const mappedAgency = agencyMapping[agency]
@@ -61,13 +68,11 @@ serve(async (req) => {
       }
     }
 
-    // Add notice type filter if specified
     if (noticeType && noticeType !== 'all') {
       samParams.append('noticeType', noticeType)
       console.log('Added notice type filter:', noticeType)
     }
 
-    // Add active only filter if specified
     if (activeOnly) {
       samParams.append('active', 'Yes')
       console.log('Added active only filter')
@@ -76,6 +81,7 @@ serve(async (req) => {
     const requestUrl = `${SAM_API_URL}?${samParams.toString()}`
     console.log('Making request to SAM.gov with URL:', requestUrl)
     
+    // Fetch from SAM.gov
     const samResponse = await fetch(requestUrl, {
       method: 'GET',
       headers: {
@@ -104,10 +110,45 @@ serve(async (req) => {
       naics_code: opportunity.naicsCode || null,
       set_aside: opportunity.setAside || null,
       response_due: opportunity.responseDeadLine || null,
+      value: opportunity.estimatedTotalValue || null,
+      source: 'SAM.gov'
     }))
 
+    // Try to fetch from FPDS if no agency filter is applied or if it matches
+    let fpdsResults: any[] = []
+    if (!agency || agency === 'all') {
+      try {
+        const fpdsResponse = await fetch(`${FPDS_API_URL}?q=${searchTerm || ''}`)
+        if (fpdsResponse.ok) {
+          const fpdsText = await fpdsResponse.text()
+          const matches = fpdsText.match(/<entry>(.*?)<\/entry>/gs) || []
+          fpdsResults = matches.map(entry => {
+            const title = entry.match(/<title>(.*?)<\/title>/)?.[1] || ''
+            const id = entry.match(/<id>(.*?)<\/id>/)?.[1] || crypto.randomUUID()
+            const content = entry.match(/<content type="text">(.*?)<\/content>/)?.[1] || ''
+            return {
+              id,
+              title,
+              description: content,
+              agency: null,
+              type: 'Contract Award',
+              posted_date: new Date().toISOString(),
+              source: 'FPDS'
+            }
+          })
+          console.log('FPDS results count:', fpdsResults.length)
+        }
+      } catch (error) {
+        console.error('FPDS fetch error:', error)
+      }
+    }
+
+    // Combine results from all sources
+    const allResults = [...samResults, ...fpdsResults]
+    console.log('Total combined results:', allResults.length)
+
     return new Response(
-      JSON.stringify(samResults),
+      JSON.stringify(allResults),
       {
         headers: {
           ...corsHeaders,
