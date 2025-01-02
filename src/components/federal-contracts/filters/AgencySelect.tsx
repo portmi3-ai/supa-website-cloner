@@ -41,8 +41,20 @@ export function AgencySelect({ value, onChange }: AgencySelectProps) {
         <SelectItem value="GSA">GSA Schedules</SelectItem>
         <SelectItem value="SBA">Small Business Administration</SelectItem>
         <SelectItem value="PTAC">PTACs</SelectItem>
-        <SelectItem value="LOCAL">Local Government</SelectItem>
-        <SelectItem value="STATE_PROC">State Procurement</SelectItem>
+        
+        {/* State Procurement */}
+        <SelectItem value="MI">Michigan Contract Connect</SelectItem>
+        <SelectItem value="NY">New York State Procurement</SelectItem>
+        <SelectItem value="CA">California eProcurement</SelectItem>
+        <SelectItem value="TX">Texas SmartBuy</SelectItem>
+        <SelectItem value="FL">Florida Vendor Bid System</SelectItem>
+        
+        {/* Local Government */}
+        <SelectItem value="LA_CITY">Los Angeles BAVN</SelectItem>
+        <SelectItem value="NYC">NYC PASSPort</SelectItem>
+        <SelectItem value="CHI">Chicago eProcurement</SelectItem>
+        <SelectItem value="HOU">Houston Supplier Portal</SelectItem>
+        <SelectItem value="PHX">Phoenix Vendor Portal</SelectItem>
       </SelectContent>
     </Select>
   )
