@@ -9,6 +9,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Received search request')
+    
     const {
       searchTerm,
       agency,
@@ -20,9 +22,11 @@ serve(async (req) => {
       city,
       page = 0,
       limit = 100,
+      sortField,
+      sortDirection,
     } = await req.json()
 
-    console.log('Received search request:', {
+    console.log('Search parameters:', {
       searchTerm,
       agency,
       startDate,
@@ -33,6 +37,8 @@ serve(async (req) => {
       city,
       page,
       limit,
+      sortField,
+      sortDirection,
       timestamp: new Date().toISOString()
     })
 
@@ -47,6 +53,8 @@ serve(async (req) => {
       city,
       page,
       limit,
+      sortField,
+      sortDirection,
     })
 
     // Ensure we always return a properly formatted response
@@ -56,6 +64,13 @@ serve(async (req) => {
       currentPage: page || 0,
       totalRecords: results?.length || 0
     }
+
+    console.log('Search response:', {
+      totalRecords: response.totalRecords,
+      currentPage: response.currentPage,
+      totalPages: response.totalPages,
+      timestamp: new Date().toISOString()
+    })
 
     return new Response(
       JSON.stringify(response),
@@ -73,6 +88,7 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     })
 
+    // Return a properly formatted error response
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error',

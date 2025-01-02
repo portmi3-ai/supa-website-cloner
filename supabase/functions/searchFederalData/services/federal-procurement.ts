@@ -11,10 +11,15 @@ interface SearchParams {
   activeOnly?: boolean
   page?: number
   limit?: number
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
 }
 
 export async function searchFederalOpportunities(params: SearchParams): Promise<PaginatedResponse<FederalDataResult>> {
-  console.log('Searching federal opportunities:', params)
+  console.log('Searching federal opportunities:', {
+    params,
+    timestamp: new Date().toISOString()
+  })
   
   try {
     // Track successful sources and results
@@ -35,8 +40,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
           count: samResults.length,
           timestamp: new Date().toISOString()
         })
-      } else {
-        throw new Error('Invalid response format from SAM.gov')
       }
     } catch (samError) {
       const errorMessage = samError instanceof Error ? samError.message : 'Unknown error'
@@ -58,8 +61,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
           count: fpdsResults.length,
           timestamp: new Date().toISOString()
         })
-      } else {
-        throw new Error('Invalid response format from FPDS')
       }
     } catch (fpdsError) {
       const errorMessage = fpdsError instanceof Error ? fpdsError.message : 'Unknown error'
@@ -73,7 +74,7 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
 
     // If no sources were successful, throw an error with details
     if (successfulSources === 0) {
-      throw new Error(`Failed to fetch data: ${errors.join('; ')}`)
+      throw new Error(`Failed to fetch data from all available sources: ${errors.join('; ')}`)
     }
 
     // Apply search term filter if specified
@@ -93,6 +94,16 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     const start = page * limit
     const end = start + limit
 
+    // Sort results if specified
+    if (params.sortField && params.sortDirection) {
+      results.sort((a, b) => {
+        const direction = params.sortDirection === 'asc' ? 1 : -1
+        const aValue = a[params.sortField as keyof FederalDataResult]
+        const bValue = b[params.sortField as keyof FederalDataResult]
+        return ((aValue || '') > (bValue || '') ? 1 : -1) * direction
+      })
+    }
+
     // Slice results for current page
     const paginatedResults = results.slice(start, end)
 
@@ -105,7 +116,6 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       timestamp: new Date().toISOString()
     })
 
-    // Return properly formatted response
     return {
       data: paginatedResults,
       totalPages,
