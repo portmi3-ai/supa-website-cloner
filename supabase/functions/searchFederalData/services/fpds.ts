@@ -35,19 +35,42 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     }
     
     // Add pagination
-    const offset = (params.page || 0) * 100 // Updated to fetch 100 results
+    const offset = (params.page || 0) * 100
     queryParams.append('start', offset.toString())
-    queryParams.append('size', '100') // Updated to fetch 100 results
+    queryParams.append('size', '100')
 
     const requestUrl = `${FPDS_API_URL}?${queryParams}`
     console.log('FPDS API request URL:', requestUrl)
 
+    // Log the full request details
+    console.log('FPDS API request details:', {
+      url: requestUrl,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/xml'
+      },
+      timestamp: new Date().toISOString()
+    })
+
     const response = await withRetry(async () => {
-      const res = await fetch(requestUrl)
+      const res = await fetch(requestUrl, {
+        headers: {
+          'Accept': 'application/xml'
+        }
+      })
+      
+      console.log('FPDS API response status:', {
+        status: res.status,
+        statusText: res.statusText,
+        headers: Object.fromEntries(res.headers.entries()),
+        timestamp: new Date().toISOString()
+      })
+
       if (!res.ok) {
         console.error('FPDS API error response:', {
           status: res.status,
-          statusText: res.statusText
+          statusText: res.statusText,
+          headers: Object.fromEntries(res.headers.entries())
         })
         throw new Error(`FPDS API error: ${res.status}`)
       }
@@ -59,15 +82,22 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
     })
 
     const xmlText = await response.text()
-    console.log('FPDS Raw XML response length:', xmlText.length)
-    console.log('FPDS Raw XML first 500 chars:', xmlText.substring(0, 500))
+    console.log('FPDS Raw XML response:', {
+      length: xmlText.length,
+      firstChars: xmlText.substring(0, 500),
+      containsData: xmlText.includes('<entry>'),
+      containsError: xmlText.includes('<error>'),
+      timestamp: new Date().toISOString()
+    })
 
     // Extract contract data from XML
+    const entries = xmlText.match(/<entry>(.*?)<\/entry>/gs) || []
     const titleMatches = xmlText.match(/<title>(.*?)<\/title>/g) || []
     const descMatches = xmlText.match(/<summary.*?>(.*?)<\/summary>/g) || []
     const dateMatches = xmlText.match(/<updated>(.*?)<\/updated>/g) || []
 
     console.log('FPDS XML parsing results:', {
+      entries: entries.length,
       titleMatches: titleMatches.length,
       descMatches: descMatches.length,
       dateMatches: dateMatches.length,
@@ -92,15 +122,15 @@ export async function fetchFPDSData(params: SearchParams): Promise<FederalDataRe
         response_due: null,
         naics_code: null,
         set_aside: null
-      };
+      }
 
       console.log('FPDS Transformed contract:', {
         id: contractData.id,
         title: contractData.title.substring(0, 50) + '...',
         timestamp: new Date().toISOString()
-      });
+      })
 
-      return contractData;
+      return contractData
     })
 
     console.log('FPDS Final results:', {
