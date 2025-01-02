@@ -4,7 +4,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/hooks/useAuth"
 
 interface SearchParams {
-  searchTerm: string
+  searchTerm?: string
   agency?: string
   startDate?: Date
   endDate?: Date
@@ -24,7 +24,18 @@ export function useFederalContractsSearch(params: SearchParams) {
     queryFn: async () => {
       try {
         console.log('Testing RLS - Current user:', user?.id)
-        console.log('Fetching federal contracts with params:', params)
+        console.log('Fetching federal contracts with cleaned params:', {
+          searchTerm: params.searchTerm,
+          agency: params.agency,
+          startDate: params.startDate?.toISOString(),
+          endDate: params.endDate?.toISOString(),
+          page: params.page,
+          noticeType: params.noticeType,
+          activeOnly: params.activeOnly,
+          sortField: params.sortField,
+          sortDirection: params.sortDirection,
+          timestamp: new Date().toISOString()
+        })
         
         // Test RLS by attempting to fetch data
         const { data: testData, error: testError } = await supabase
@@ -34,22 +45,8 @@ export function useFederalContractsSearch(params: SearchParams) {
 
         console.log('RLS Test - Result:', testData ? 'Success' : 'No data', 'Error:', testError)
         
-        // Clean up undefined values and format dates
-        const cleanParams = {
-          searchTerm: params.searchTerm || '*',
-          agency: params.agency === 'all' ? undefined : params.agency,
-          startDate: params.startDate?.toISOString(),
-          endDate: params.endDate?.toISOString(),
-          page: params.page || 0,
-          noticeType: params.noticeType === 'all' ? undefined : params.noticeType,
-          activeOnly: params.activeOnly,
-          sortField: params.sortField,
-          sortDirection: params.sortDirection,
-          limit: 50
-        }
-
         const { data, error } = await supabase.functions.invoke("searchFederalData", {
-          body: cleanParams
+          body: params
         })
 
         if (error) {

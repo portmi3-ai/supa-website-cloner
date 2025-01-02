@@ -18,8 +18,9 @@ export function useContractsSearch() {
 
   const { sortField, sortDirection, onSort } = useSortableTable()
 
-  const { data: contracts, isLoading, error } = useFederalContractsSearch({
-    searchTerm: searchQuery,
+  // Clean up undefined values and format dates
+  const cleanParams = {
+    searchTerm: searchQuery || undefined,
     agency: selectedAgency === "all" ? undefined : selectedAgency,
     startDate: dateRange.from,
     endDate: dateRange.to,
@@ -28,7 +29,9 @@ export function useContractsSearch() {
     page: currentPage - 1,
     sortField,
     sortDirection,
-  })
+  }
+
+  const { data: contracts, isLoading, error } = useFederalContractsSearch(cleanParams)
 
   return {
     searchQuery,
