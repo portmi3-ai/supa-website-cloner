@@ -1,4 +1,4 @@
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from '../../_shared/cors.ts'
 
 export const createSuccessResponse = (data: any) => {
   return new Response(
@@ -13,9 +13,16 @@ export const createSuccessResponse = (data: any) => {
 }
 
 export const createErrorResponse = (error: unknown) => {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+  console.error('Error in searchFederalData:', {
+    error: errorMessage,
+    stack: error instanceof Error ? error.stack : undefined,
+    timestamp: new Date().toISOString()
+  })
+
   return new Response(
     JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
       message: "Failed to fetch contract data. Please try again later.",
       data: [],
       totalPages: 0,

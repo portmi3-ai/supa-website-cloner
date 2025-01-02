@@ -5,6 +5,7 @@ import { logSearchParameters, logSearchResponse } from './utils/logging.ts'
 import { createSuccessResponse, createErrorResponse } from './utils/response.ts'
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
