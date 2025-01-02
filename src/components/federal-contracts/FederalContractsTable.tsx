@@ -4,7 +4,7 @@ import {
   TableCell,
   TableRow,
 } from "@/components/ui/table"
-import { format } from "date-fns"
+import { format, isValid, parseISO } from "date-fns"
 import { FederalContractsTableHeader } from "./table/FederalContractsTableHeader"
 import { FederalContractsLoadingState } from "./table/FederalContractsLoadingState"
 import { FederalContractsEmptyState } from "./table/FederalContractsEmptyState"
@@ -53,6 +53,12 @@ export function FederalContractsTable({
   sortDirection,
   onSort,
 }: FederalContractsTableProps) {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "N/A"
+    const parsedDate = parseISO(dateString)
+    return isValid(parsedDate) ? format(parsedDate, "MMM d, yyyy") : "Invalid Date"
+  }
+
   if (isLoading) {
     return (
       <div className="rounded-md border">
@@ -133,18 +139,10 @@ export function FederalContractsTable({
                 </TableCell>
                 <TableCell>{contract.agency}</TableCell>
                 <TableCell>{contract.type}</TableCell>
-                <TableCell>
-                  {format(new Date(contract.posted_date), "MMM d, yyyy")}
-                </TableCell>
-                <TableCell>
-                  {contract.naics_code}
-                </TableCell>
-                <TableCell>
-                  {contract.set_aside || "N/A"}
-                </TableCell>
-                <TableCell>
-                  {format(new Date(contract.response_due), "MMM d, yyyy")}
-                </TableCell>
+                <TableCell>{formatDate(contract.posted_date)}</TableCell>
+                <TableCell>{contract.naics_code}</TableCell>
+                <TableCell>{contract.set_aside || "N/A"}</TableCell>
+                <TableCell>{formatDate(contract.response_due)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
