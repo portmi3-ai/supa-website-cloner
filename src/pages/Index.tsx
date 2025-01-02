@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardCards } from "@/components/dashboard/DashboardCards"
 import { LoadingSpinner } from "@/components/ui/loading"
 import { toast } from "sonner"
@@ -49,12 +48,7 @@ const Index = () => {
     return <LoadingSpinner />
   }
 
-  return (
-    <>
-      <TopBar username={profile?.username} email={user?.email} />
-      <DashboardCards username={profile?.username} />
-    </>
-  )
+  return <DashboardCards username={profile?.username} />
 }
 
 export default Index

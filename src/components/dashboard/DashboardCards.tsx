@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { TopBar } from "@/components/dashboard/TopBar"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { toast } from "sonner"
 import { ProfileCompletionCard } from "./cards/ProfileCompletionCard"
@@ -43,8 +42,7 @@ export function DashboardCards({ username }: DashboardCardsProps) {
   })
 
   return (
-    <DashboardLayout>
-      <TopBar username={username} email={user?.email} />
+    <DashboardLayout username={username} email={user?.email}>
       <div className="container mx-auto p-6">
         <div className="flex items-center gap-3 mb-8">
           <Rocket className="h-8 w-8 text-primary animate-pulse" />
