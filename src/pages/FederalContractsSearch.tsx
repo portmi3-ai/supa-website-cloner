@@ -1,10 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FederalContractsSearchBar } from "@/components/federal-contracts/FederalContractsSearchBar"
 import { FederalContractsFilters } from "@/components/federal-contracts/FederalContractsFilters"
 import { FederalContractsTable } from "@/components/federal-contracts/FederalContractsTable"
 import { useFederalContractsSearch } from "@/hooks/useFederalContractsSearch"
 import { Button } from "@/components/ui/button"
 import { Bell } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 export function FederalContractsSearch() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -22,17 +23,35 @@ export function FederalContractsSearch() {
     to: undefined,
   })
 
-  const { data: contracts, isLoading } = useFederalContractsSearch({
+  const { toast } = useToast()
+
+  // Fetch initial results on component mount
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when search params change
+  }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange])
+
+  const { data: contracts, isLoading, error } = useFederalContractsSearch({
     searchTerm: searchQuery,
     agency: selectedAgency === "all" ? undefined : selectedAgency,
     startDate: dateRange.from,
     endDate: dateRange.to,
     noticeType: noticeType === "all" ? undefined : noticeType,
     activeOnly,
-    page: currentPage,
+    page: currentPage - 1, // API uses 0-based indexing
     sortField,
     sortDirection,
   })
+
+  // Show error toast if search fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch contracts. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [error, toast])
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -74,17 +93,17 @@ export function FederalContractsSearch() {
         />
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {contracts?.length || 0} results found
+            {contracts?.totalRecords || 0} results found
           </div>
           <Button variant="outline" size="sm">
             Export
           </Button>
         </div>
         <FederalContractsTable
-          contracts={contracts || []}
+          contracts={contracts?.data || []}
           isLoading={isLoading}
           currentPage={currentPage}
-          totalPages={Math.ceil((contracts?.length || 0) / 10)}
+          totalPages={contracts?.totalPages || 1}
           onPageChange={setCurrentPage}
           sortField={sortField}
           sortDirection={sortDirection}

@@ -29,15 +29,23 @@ export function useFederalContractsSearch(params: SearchParams) {
             agency: params.agency,
             startDate: params.startDate?.toISOString(),
             endDate: params.endDate?.toISOString(),
-            page: params.page || 1,
+            page: params.page || 0,
             noticeType: params.noticeType,
             activeOnly: params.activeOnly,
             sortField: params.sortField,
-            sortDirection: params.sortDirection
+            sortDirection: params.sortDirection,
+            limit: 100 // Maximum allowed by SAM.gov
           }
         })
 
         if (error) throw error
+        
+        console.log('Search results:', {
+          totalRecords: data.totalRecords,
+          currentPage: data.currentPage,
+          resultsCount: data.data.length
+        })
+        
         return data
       } catch (error) {
         console.error("Error fetching federal contracts:", error)
