@@ -4,13 +4,11 @@ import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/hooks/useAuth"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { routes } from "./config/routes"
+import { router } from "./config/routes"
 
 export { useAuth }
 
 const queryClient = new QueryClient()
-
-const router = createBrowserRouter(routes)
 
 export default function App() {
   return (

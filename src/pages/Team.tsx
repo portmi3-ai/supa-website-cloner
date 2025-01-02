@@ -1,108 +1,75 @@
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
 import { useState } from "react"
-import { supabase } from "@/integrations/supabase/client"
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { UserPlus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, UserPlus } from "lucide-react"
+import { supabase } from "@/integrations/supabase/client"
+import { TeamMember } from "@/types/team.types"
 
-interface TeamMember {
-  id: string
-  email: string
-  role: string
-  avatar_url?: string
-}
-
-export default function Team() {
-  const [inviteEmail, setInviteEmail] = useState("")
-  const { toast } = useToast()
+const Team = () => {
   const [isInviting, setIsInviting] = useState(false)
 
-  const { data: teamMembers, isLoading } = useQuery({
+  const { data: teamMembers } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
-      
+        .order("username")
+
       if (error) throw error
-      return data as TeamMember[]
+
+      // Transform profiles to match TeamMember interface
+      return profiles.map((profile): TeamMember => ({
+        id: profile.id,
+        username: profile.username,
+        email: "", // This would need to come from auth.users but we can't query it directly
+        role: "Member", // Default role
+        avatar_url: profile.avatar_url,
+        updated_at: profile.updated_at
+      }))
     }
   })
 
-  const handleInvite = async () => {
-    try {
-      setIsInviting(true)
-      const { error } = await supabase.functions.invoke("invite-team-member", {
-        body: { email: inviteEmail }
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "Invitation sent",
-        description: `An invitation has been sent to ${inviteEmail}`
-      })
-      setInviteEmail("")
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send invitation. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsInviting(false)
-    }
-  }
-
   return (
-    <div className="container py-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Team Management</h1>
-        <div className="flex gap-4">
-          <Input
-            placeholder="Email address"
-            type="email"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-          />
-          <Button onClick={handleInvite} disabled={!inviteEmail || isInviting}>
-            {isInviting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <UserPlus className="mr-2 h-4 w-4" />
-            )}
-            Invite Member
+    <DashboardLayout>
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Team Management</h1>
+          <Button onClick={() => setIsInviting(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite Team Member
           </Button>
         </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <div className="col-span-full flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : teamMembers?.map((member) => (
-          <Card key={member.id} className="p-6">
-            <div className="flex items-center space-x-4">
-              <Avatar>
-                <AvatarImage src={member.avatar_url} />
-                <AvatarFallback>
-                  {member.email.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-medium">{member.email}</div>
-                <div className="text-sm text-muted-foreground capitalize">
-                  {member.role}
-                </div>
+        
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Members</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {teamMembers?.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        {member.username?.[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div>
+                        <p className="font-medium">{member.username || "Unnamed User"}</p>
+                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </CardContent>
           </Card>
-        ))}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
+
+export default Team
