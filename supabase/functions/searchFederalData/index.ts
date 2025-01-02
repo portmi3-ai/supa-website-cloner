@@ -26,6 +26,8 @@ serve(async (req) => {
       activeOnly: params.activeOnly ?? true,
       page: params.page || 0,
       limit: Math.min(params.limit || 100, 100), // Cap at 100 results per page
+      sortField: params.sortField,
+      sortDirection: params.sortDirection
     }
 
     console.log('Cleaned search parameters:', cleanParams)

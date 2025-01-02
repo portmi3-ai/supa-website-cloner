@@ -6,6 +6,8 @@ export interface SearchParams {
   contractType?: string
   page?: number
   limit?: number
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
 }
 
 export interface FederalDataResult {
