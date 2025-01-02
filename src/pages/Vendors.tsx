@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { OpportunityMatcher } from "@/components/opportunities/OpportunityMatcher"
 
 const Vendors = () => {
   return (
@@ -16,6 +17,8 @@ const Vendors = () => {
         </div>
         
         <div className="grid gap-6">
+          <OpportunityMatcher />
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -25,7 +28,7 @@ const Vendors = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Manage your vendors and track their performance. Coming soon.
+                Manage your vendors and track their performance.
               </p>
             </CardContent>
           </Card>

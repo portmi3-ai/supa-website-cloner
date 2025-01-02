@@ -5,6 +5,10 @@ import Analytics from "@/pages/Analytics"
 import Team from "@/pages/Team"
 import MarketIntelligence from "@/pages/MarketIntelligence"
 import Workflows from "@/pages/Workflows"
+import Contracts from "@/pages/Contracts"
+import Proposals from "@/pages/Proposals"
+import Vendors from "@/pages/Vendors"
+import SavedSearches from "@/pages/SavedSearches"
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +34,22 @@ export const router = createBrowserRouter([
         path: "/workflows",
         element: <Workflows />,
       },
+      {
+        path: "/contracts",
+        element: <Contracts />,
+      },
+      {
+        path: "/proposals",
+        element: <Proposals />,
+      },
+      {
+        path: "/vendors",
+        element: <Vendors />,
+      },
+      {
+        path: "/saved-searches",
+        element: <SavedSearches />,
+      }
     ],
   },
 ])
