@@ -1,18 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 const SAM_API_URL = "https://api.sam.gov/entity-information/v3/entities"
 
 serve(async (req) => {
   console.log('SAM API function called')
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -25,25 +19,29 @@ serve(async (req) => {
       console.error('SAM API key is missing')
       throw new Error('SAM API configuration is incomplete')
     }
-    console.log('SAM API key found')
 
+    // Build query parameters
     const params = new URLSearchParams({
       api_key: apiKey,
-      q: searchTerm || '',
-      ...(agency && agency !== 'all' ? { 'organizationId': agency } : {}),
+      q: searchTerm || '*',
+      page: '0',
+      size: '10',
     })
 
+    if (agency && agency !== 'all') {
+      params.append('organizationId', agency)
+    }
+
     const url = `${SAM_API_URL}?${params.toString()}`
-    console.log('Making request to SAM.gov:', url)
+    console.log('Making request to SAM.gov:', url.replace(apiKey, '[REDACTED]'))
     
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json'
       }
     })
 
-    console.log('SAM.gov API response status:', response.status)
-    
     if (!response.ok) {
       const errorText = await response.text()
       console.error('SAM.gov API error:', response.status, errorText)
@@ -53,7 +51,7 @@ serve(async (req) => {
     const data = await response.json()
     console.log('SAM.gov results count:', data.totalRecords || 0)
 
-    const transformedResults = data.entityData?.map((entity: any) => ({
+    const transformedResults = (data.entityData || []).map((entity: any) => ({
       id: entity.entityRegistration?.ueiSAM || crypto.randomUUID(),
       title: entity.entityRegistration?.legalBusinessName || 'Unnamed Entity',
       description: entity.entityRegistration?.purposeOfRegistration || '',
@@ -62,9 +60,7 @@ serve(async (req) => {
       submission_deadline: null,
       status: 'active',
       source: 'SAM.gov'
-    })) || []
-
-    console.log('Transformed results count:', transformedResults.length)
+    }))
 
     return new Response(
       JSON.stringify(transformedResults),

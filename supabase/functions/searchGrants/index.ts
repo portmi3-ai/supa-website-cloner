@@ -17,43 +17,33 @@ serve(async (req) => {
     const params = new URLSearchParams({
       keyword: searchTerm || '',
       oppStatus: 'posted',
-      sortBy: 'relevance',
-      rows: '25',
     })
 
-    console.log('Fetching from URL:', `${GRANTS_API_URL}?${params.toString()}`)
+    const url = `${GRANTS_API_URL}?${params.toString()}`
+    console.log('Fetching from Grants.gov URL:', url)
     
-    const response = await fetch(`${GRANTS_API_URL}?${params.toString()}`, {
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'Grants.gov API Client', // Adding User-Agent header to avoid 403
+        'User-Agent': 'Grants.gov API Client',
       },
     })
     
     if (!response.ok) {
       console.error('Grants.gov API error:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Error details:', errorText)
       throw new Error(`Grants.gov API error: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
-    console.log('Grants.gov API response status:', data?.statusMessage || 'No status')
-    console.log('Number of opportunities found:', data?.oppHits?.length || 0)
+    console.log('Grants.gov API response:', {
+      status: data?.statusMessage,
+      count: data?.oppHits?.length || 0
+    })
 
-    if (!data || !Array.isArray(data.oppHits)) {
-      console.log('No grants found or invalid response structure')
-      return new Response(
-        JSON.stringify([]),
-        {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    }
-
-    const transformedGrants = data.oppHits.map((grant: any) => ({
+    const transformedGrants = (data.oppHits || []).map((grant: any) => ({
       id: grant.id || crypto.randomUUID(),
       title: grant.title || 'Untitled Grant',
       description: grant.description || grant.synopsis || '',
@@ -63,8 +53,6 @@ serve(async (req) => {
       status: 'posted',
       source: 'Grants.gov'
     }))
-
-    console.log(`Successfully transformed ${transformedGrants.length} grants`)
 
     return new Response(
       JSON.stringify(transformedGrants),
