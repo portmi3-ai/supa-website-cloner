@@ -1,4 +1,4 @@
-import { corsHeaders } from '../../_shared/cors.ts'
+import { corsHeaders } from '../cors.ts'
 
 export const createSuccessResponse = (data: any) => {
   return new Response(
@@ -8,6 +8,7 @@ export const createSuccessResponse = (data: any) => {
         ...corsHeaders,
         'Content-Type': 'application/json',
       },
+      status: 200,
     }
   )
 }

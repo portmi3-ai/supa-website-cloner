@@ -2,7 +2,10 @@ import { searchFederalOpportunities } from './federal-procurement.ts'
 import { FederalDataResult, SearchParams } from '../types.ts'
 
 export async function aggregateSearchResults(params: SearchParams): Promise<FederalDataResult[]> {
-  console.log('Aggregating search results with params:', params)
+  console.log('Aggregating search results with params:', {
+    ...params,
+    timestamp: new Date().toISOString()
+  })
 
   try {
     const federalResults = await searchFederalOpportunities(params)
@@ -41,10 +44,17 @@ export async function aggregateSearchResults(params: SearchParams): Promise<Fede
       )
     }
 
-    console.log(`Returning ${allResults.length} total results after filtering`)
+    console.log(`Returning ${allResults.length} total results after filtering`, {
+      timestamp: new Date().toISOString()
+    })
+    
     return allResults
   } catch (error) {
-    console.error('Error aggregating search results:', error)
+    console.error('Error aggregating search results:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }

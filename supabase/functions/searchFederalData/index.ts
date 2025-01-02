@@ -3,6 +3,7 @@ import { corsHeaders } from './cors.ts'
 import { aggregateSearchResults } from './services/data-aggregator.ts'
 import { logSearchParameters, logSearchResponse } from './utils/logging.ts'
 import { createSuccessResponse, createErrorResponse } from './utils/response.ts'
+import { withRetry } from './utils/apiRetry.ts'
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -15,6 +16,13 @@ serve(async (req) => {
     
     const params = await req.json()
     logSearchParameters(params)
+
+    // Validate API key
+    const apiKey = Deno.env.get('SAM_API_KEY')
+    if (!apiKey) {
+      console.error('SAM.gov API key is missing')
+      throw new Error('SAM.gov API key is required')
+    }
 
     // Validate and clean up search parameters
     const cleanParams = {
@@ -32,8 +40,16 @@ serve(async (req) => {
 
     console.log('Cleaned search parameters:', cleanParams)
 
-    const results = await aggregateSearchResults(cleanParams)
-    console.log('Search results count:', results?.length || 0)
+    // Wrap the aggregateSearchResults call with retry logic
+    const results = await withRetry(
+      () => aggregateSearchResults(cleanParams),
+      {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        maxDelay: 5000,
+        retryableStatuses: [429, 500, 502, 503, 504]
+      }
+    )
 
     const response = {
       data: results || [],
@@ -45,7 +61,11 @@ serve(async (req) => {
     logSearchResponse(response)
     return createSuccessResponse(response)
   } catch (error) {
-    console.error('Search error:', error)
+    console.error('Search error:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
     return createErrorResponse(error)
   }
 })
