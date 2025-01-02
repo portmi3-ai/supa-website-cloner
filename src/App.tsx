@@ -6,6 +6,9 @@ import { FederalContractsSearch } from "@/pages/FederalContractsSearch"
 import Settings from "@/pages/Settings"
 import Notifications from "@/pages/Notifications"
 import Profile from "@/pages/Profile"
+import Team from "@/pages/Team"
+import Documents from "@/pages/Documents"
+import Help from "@/pages/Help"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/hooks/useAuth"
@@ -65,6 +68,21 @@ const router = createBrowserRouter([
   {
     path: "/profile",
     element: <DashboardLayout><Profile /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/team",
+    element: <DashboardLayout><Team /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/documents",
+    element: <DashboardLayout><Documents /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/help",
+    element: <DashboardLayout><Help /></DashboardLayout>,
     errorElement: <RouteError />,
   },
 ])
