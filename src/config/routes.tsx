@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import Index from "@/pages/Index"
 import Contracts from "@/pages/Contracts"
 import { FederalContractsSearch } from "@/pages/FederalContractsSearch"
+import SavedSearches from "@/pages/SavedSearches"
 import Settings from "@/pages/Settings"
 import Notifications from "@/pages/Notifications"
 import Profile from "@/pages/Profile"
@@ -45,6 +46,11 @@ export const routes = [
   {
     path: "/federal-contracts/search",
     element: <DashboardLayout><FederalContractsSearch /></DashboardLayout>,
+    errorElement: <RouteError />,
+  },
+  {
+    path: "/saved-searches",
+    element: <DashboardLayout><SavedSearches /></DashboardLayout>,
     errorElement: <RouteError />,
   },
   {
