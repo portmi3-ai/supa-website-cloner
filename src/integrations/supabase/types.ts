@@ -51,6 +51,27 @@ export type Database = {
         }
         Relationships: []
       }
+      federal_data: {
+        Row: {
+          date_posted: string | null
+          department: string | null
+          id: string
+          title: string | null
+        }
+        Insert: {
+          date_posted?: string | null
+          department?: string | null
+          id: string
+          title?: string | null
+        }
+        Update: {
+          date_posted?: string | null
+          department?: string | null
+          id?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -200,7 +221,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_federal_data: {
+        Args: {
+          p_department: string
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: {
+          id: string
+          title: string
+          department: string
+          date_posted: string
+        }[]
+      }
     }
     Enums: {
       contract_status:
