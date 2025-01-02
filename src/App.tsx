@@ -9,6 +9,7 @@ import Profile from "@/pages/Profile"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/hooks/useAuth"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 export { useAuth }
 
@@ -41,9 +42,11 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <RouterProvider router={router} />
-      <Toaster />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <RouterProvider router={router} />
+        <Toaster />
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
