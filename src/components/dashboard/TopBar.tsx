@@ -25,7 +25,7 @@ export function TopBar({ username, email }: TopBarProps) {
   return (
     <div className="border-b border-border/40 backdrop-blur-sm bg-background/80">
       <div className="flex h-16 items-center gap-4">
-        <div className="pl-2">
+        <div className="flex items-center pl-4">
           <SidebarTrigger />
         </div>
         <div className="flex-1" />

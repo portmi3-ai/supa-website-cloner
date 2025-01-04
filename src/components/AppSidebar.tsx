@@ -12,7 +12,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className="bg-gradient-to-b from-sidebar-background to-sidebar-accent border-r border-sidebar-border transition-all duration-300"
+      className="bg-gradient-to-b from-sidebar-background to-sidebar-accent border-r border-sidebar-border transition-all duration-300 flex-shrink-0"
       collapsible="icon"
     >
       <SidebarContent>
