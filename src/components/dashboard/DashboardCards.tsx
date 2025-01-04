@@ -9,7 +9,6 @@ import { RecentActivityCard } from "./cards/RecentActivityCard"
 import { useRecentActivity } from "@/hooks/useRecentActivity"
 import { useProfileCompletion } from "@/hooks/useProfileCompletion"
 import { BarChart, Rocket, Sparkles } from "lucide-react"
-import { startTransition, Suspense } from "react"
 
 interface DashboardCardsProps {
   username?: string
@@ -29,9 +28,7 @@ export function DashboardCards({ username }: DashboardCardsProps) {
         .maybeSingle()
 
       if (error) {
-        startTransition(() => {
-          toast.error("Error fetching settings")
-        })
+        toast.error("Error fetching settings")
         throw error
       }
       return data
@@ -46,7 +43,7 @@ export function DashboardCards({ username }: DashboardCardsProps) {
 
   return (
     <DashboardLayout username={username} email={user?.email}>
-      <div className="w-full p-6">
+      <div className="container mx-auto p-6">
         <div className="flex items-center gap-3 mb-8">
           <Rocket className="h-8 w-8 text-primary animate-pulse" />
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">
@@ -55,42 +52,36 @@ export function DashboardCards({ username }: DashboardCardsProps) {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Suspense fallback={<div className="h-[200px] animate-pulse bg-muted rounded-lg" />}>
-            <div className="dashboard-card futuristic-border glow-effect">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Profile Status
-                </h2>
-              </div>
-              <ProfileCompletionCard
-                username={username}
-                profileCompletion={profileCompletion}
-                completionSuggestions={completionSuggestions}
-              />
+          <div className="dashboard-card futuristic-border glow-effect">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Profile Status
+              </h2>
             </div>
-          </Suspense>
+            <ProfileCompletionCard
+              username={username}
+              profileCompletion={profileCompletion}
+              completionSuggestions={completionSuggestions}
+            />
+          </div>
 
-          <Suspense fallback={<div className="h-[200px] animate-pulse bg-muted rounded-lg" />}>
-            <div className="dashboard-card futuristic-border glow-effect">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <BarChart className="h-5 w-5 text-primary" />
-                  System Settings
-                </h2>
-              </div>
-              <SettingsOverviewCard
-                settings={settings}
-                isLoading={isLoadingSettings}
-              />
+          <div className="dashboard-card futuristic-border glow-effect">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <BarChart className="h-5 w-5 text-primary" />
+                System Settings
+              </h2>
             </div>
-          </Suspense>
+            <SettingsOverviewCard
+              settings={settings}
+              isLoading={isLoadingSettings}
+            />
+          </div>
 
-          <Suspense fallback={<div className="h-[200px] animate-pulse bg-muted rounded-lg" />}>
-            <div className="dashboard-card futuristic-border glow-effect">
-              <RecentActivityCard activities={recentActivity} />
-            </div>
-          </Suspense>
+          <div className="dashboard-card futuristic-border glow-effect">
+            <RecentActivityCard activities={recentActivity} />
+          </div>
         </div>
       </div>
     </DashboardLayout>
