@@ -10,11 +10,11 @@ export function AppLayout() {
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar />
           <main className="flex-1 overflow-y-auto">
             <Suspense fallback={<LoadingSpinner />}>
-              <div className="container h-full py-6">
+              <div className="container h-full py-6 w-full max-w-[1400px] transition-all duration-300">
                 <Outlet />
               </div>
             </Suspense>
