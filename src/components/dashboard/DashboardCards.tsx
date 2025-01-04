@@ -43,7 +43,7 @@ export function DashboardCards({ username }: DashboardCardsProps) {
 
   return (
     <DashboardLayout username={username} email={user?.email}>
-      <div className="container mx-auto p-6">
+      <div className="w-full transition-all duration-300 ease-in-out">
         <div className="flex items-center gap-3 mb-8">
           <Rocket className="h-8 w-8 text-primary animate-pulse" />
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">

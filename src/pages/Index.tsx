@@ -8,7 +8,6 @@ import { toast } from "sonner"
 const Index = () => {
   const { user } = useAuth()
 
-  // Fetch user profile data
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -23,7 +22,6 @@ const Index = () => {
         throw error
       }
 
-      // If no profile exists, create one
       if (!data) {
         const { data: newProfile, error: createError } = await supabase
           .from("profiles")
@@ -48,7 +46,11 @@ const Index = () => {
     return <LoadingSpinner />
   }
 
-  return <DashboardCards username={profile?.username} />
+  return (
+    <div className="w-full transition-all duration-300 ease-in-out">
+      <DashboardCards username={profile?.username} />
+    </div>
+  )
 }
 
 export default Index
