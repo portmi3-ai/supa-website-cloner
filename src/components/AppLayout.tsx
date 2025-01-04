@@ -9,10 +9,10 @@ export function AppLayout() {
       <div className="min-h-screen w-full bg-background">
         <div className="flex h-screen overflow-hidden">
           <AppSidebar />
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
             <TopBar />
             <main className="flex-1 overflow-y-auto">
-              <div className="h-full py-6 px-4 md:px-6">
+              <div className="container h-full py-6">
                 <Outlet />
               </div>
             </main>

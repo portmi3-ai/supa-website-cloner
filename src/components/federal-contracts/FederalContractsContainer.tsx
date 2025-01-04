@@ -81,7 +81,7 @@ export function FederalContractsContainer() {
   }
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div className="space-y-6 h-full flex flex-col max-w-[100%]">
       <div className="search-container">
         <FederalContractsHeader />
         <div className="mt-6">

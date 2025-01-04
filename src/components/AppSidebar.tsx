@@ -11,12 +11,15 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="bg-gradient-to-b from-sidebar-background to-sidebar-accent border-r border-sidebar-border">
+    <Sidebar 
+      className="bg-gradient-to-b from-sidebar-background to-sidebar-accent border-r border-sidebar-border transition-all duration-300"
+      collapsible="icon"
+    >
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center gap-2 px-4 py-6">
             <Rocket className="h-8 w-8 text-primary animate-pulse" />
-            <span className="text-xl font-bold text-primary">Nova 3030</span>
+            <span className="text-xl font-bold text-primary transition-opacity duration-300 group-[[data-collapsible=icon]]:opacity-0">Nova 3030</span>
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
