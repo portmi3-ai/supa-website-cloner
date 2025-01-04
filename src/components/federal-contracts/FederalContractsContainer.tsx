@@ -28,7 +28,6 @@ export function FederalContractsContainer() {
     error,
   } = useContractsSearch()
 
-  // Show error toast if there's an error
   useEffect(() => {
     if (error) {
       toast({
@@ -39,16 +38,15 @@ export function FederalContractsContainer() {
     }
   }, [error, toast])
 
-  // Reset to first page when search criteria changes
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange, setCurrentPage])
 
   return (
-    <div className="container space-y-8 py-8">
-      <div className="search-container glow-effect floating">
+    <div className="space-y-6 h-full flex flex-col">
+      <div className="search-container">
         <FederalContractsHeader />
-        <div className="mt-6 animate-fade-in">
+        <div className="mt-6">
           <FederalContractsControls
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -65,7 +63,7 @@ export function FederalContractsContainer() {
         </div>
       </div>
       
-      <div className="results-table animate-scale-in">
+      <div className="flex-1 overflow-hidden flex flex-col">
         <FederalContractsResults
           contracts={contracts?.data || []}
           isLoading={isLoading}

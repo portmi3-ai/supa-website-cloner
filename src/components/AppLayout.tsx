@@ -6,13 +6,15 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 export function AppLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background">
-        <div className="flex">
+      <div className="min-h-screen w-full bg-background">
+        <div className="flex h-screen overflow-hidden">
           <AppSidebar />
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <TopBar />
-            <main className="p-4 md:p-8">
-              <Outlet />
+            <main className="flex-1 overflow-y-auto">
+              <div className="container h-full py-6">
+                <Outlet />
+              </div>
             </main>
           </div>
         </div>

@@ -40,8 +40,30 @@
   }
 }
 
+/* Custom scrollbar styles */
+@layer utilities {
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary));
+    border-radius: 3px;
+  }
+}
+
 .search-container {
-  @apply relative rounded-lg border bg-card p-6 shadow-lg;
+  @apply relative rounded-lg border bg-card p-4 md:p-6 shadow-lg;
   background: linear-gradient(135deg, hsl(240 5.9% 10%), hsl(240 5.9% 15%));
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -72,7 +94,7 @@
 }
 
 .results-table {
-  @apply rounded-lg border bg-card shadow-xl;
+  @apply rounded-lg border bg-card shadow-xl overflow-hidden;
   background: linear-gradient(135deg, hsl(240 5.9% 10%) 0%, hsl(240 5.9% 12%) 100%);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -81,7 +103,7 @@
 }
 
 .table-header {
-  @apply bg-secondary/50 backdrop-blur-sm;
+  @apply bg-secondary/50 backdrop-blur-sm sticky top-0 z-10;
   background: linear-gradient(180deg, hsl(240 3.7% 15.9%), hsl(240 3.7% 13.9%));
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
