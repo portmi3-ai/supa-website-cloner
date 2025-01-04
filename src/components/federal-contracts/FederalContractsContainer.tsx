@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, startTransition } from "react"
 import { FederalContractsHeader } from "./sections/FederalContractsHeader"
 import { FederalContractsControls } from "./sections/FederalContractsControls"
 import { FederalContractsResults } from "./sections/FederalContractsResults"
@@ -38,9 +38,47 @@ export function FederalContractsContainer() {
     }
   }, [error, toast])
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange, setCurrentPage])
+  // Wrap state updates in startTransition to prevent suspension during synchronous updates
+  const handleSearchChange = (value: string) => {
+    startTransition(() => {
+      setSearchQuery(value)
+      setCurrentPage(1)
+    })
+  }
+
+  const handleAgencyChange = (value: string) => {
+    startTransition(() => {
+      setSelectedAgency(value)
+      setCurrentPage(1)
+    })
+  }
+
+  const handleNoticeTypeChange = (value: string) => {
+    startTransition(() => {
+      setNoticeType(value)
+      setCurrentPage(1)
+    })
+  }
+
+  const handleActiveOnlyChange = (value: boolean) => {
+    startTransition(() => {
+      setActiveOnly(value)
+      setCurrentPage(1)
+    })
+  }
+
+  const handleDateRangeChange = (value: { from: Date | undefined; to: Date | undefined }) => {
+    startTransition(() => {
+      setDateRange(value)
+      setCurrentPage(1)
+    })
+  }
+
+  const handlePageChange = (page: number) => {
+    startTransition(() => {
+      setCurrentPage(page)
+    })
+  }
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -49,15 +87,15 @@ export function FederalContractsContainer() {
         <div className="mt-6">
           <FederalContractsControls
             searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            onSearchChange={handleSearchChange}
             selectedAgency={selectedAgency}
-            onAgencyChange={setSelectedAgency}
+            onAgencyChange={handleAgencyChange}
             dateRange={dateRange}
-            onDateRangeChange={setDateRange}
+            onDateRangeChange={handleDateRangeChange}
             noticeType={noticeType}
-            onNoticeTypeChange={setNoticeType}
+            onNoticeTypeChange={handleNoticeTypeChange}
             activeOnly={activeOnly}
-            onActiveOnlyChange={setActiveOnly}
+            onActiveOnlyChange={handleActiveOnlyChange}
             isLoading={isLoading}
           />
         </div>
@@ -70,7 +108,7 @@ export function FederalContractsContainer() {
           error={error}
           currentPage={currentPage}
           totalPages={contracts?.totalPages || 1}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={onSort}
