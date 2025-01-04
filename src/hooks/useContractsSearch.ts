@@ -26,7 +26,7 @@ export function useContractsSearch() {
     endDate: dateRange.to,
     noticeType: noticeType === "all" ? undefined : noticeType,
     activeOnly,
-    page: currentPage - 1,
+    page: currentPage - 1, // API uses 0-based indexing
     sortField,
     sortDirection,
   }

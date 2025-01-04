@@ -39,6 +39,11 @@ export function FederalContractsContainer() {
     }
   }, [error, toast])
 
+  // Reset to first page when search criteria changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange, setCurrentPage])
+
   return (
     <div className="container space-y-8 py-8">
       <div className="search-container glow-effect floating">
