@@ -39,7 +39,7 @@ export function FederalContractsContainer() {
   }, [error, toast])
 
   return (
-    <div className="space-y-6 h-full flex flex-col max-w-[100%]">
+    <div className="space-y-6 h-full flex flex-col max-w-[100%] w-full transition-all duration-300">
       <div className="search-container">
         <FederalContractsHeader />
         <div className="mt-6">
