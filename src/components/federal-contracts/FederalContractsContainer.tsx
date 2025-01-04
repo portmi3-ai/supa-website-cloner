@@ -45,7 +45,7 @@ export function FederalContractsContainer() {
   }, [searchQuery, selectedAgency, noticeType, activeOnly, dateRange, setCurrentPage])
 
   return (
-    <div className="container space-y-8 py-8">
+    <div className="container max-w-full space-y-8 py-4 md:py-8">
       <div className="search-container glow-effect floating">
         <FederalContractsHeader />
         <div className="mt-6 animate-fade-in">
@@ -65,19 +65,21 @@ export function FederalContractsContainer() {
         </div>
       </div>
       
-      <div className="results-table animate-scale-in">
-        <FederalContractsResults
-          contracts={contracts?.data || []}
-          isLoading={isLoading}
-          error={error}
-          currentPage={currentPage}
-          totalPages={contracts?.totalPages || 1}
-          onPageChange={setCurrentPage}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={onSort}
-          totalRecords={contracts?.totalRecords || 0}
-        />
+      <div className="results-table animate-scale-in overflow-hidden">
+        <div className="overflow-x-auto">
+          <FederalContractsResults
+            contracts={contracts?.data || []}
+            isLoading={isLoading}
+            error={error}
+            currentPage={currentPage}
+            totalPages={contracts?.totalPages || 1}
+            onPageChange={setCurrentPage}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
+            totalRecords={contracts?.totalRecords || 0}
+          />
+        </div>
       </div>
     </div>
   )

@@ -60,15 +60,17 @@ export function FederalContractsTableContainer({
   return (
     <div className="space-y-4 animate-scale-in">
       <div className="rounded-md border border-border/50 backdrop-blur-sm overflow-hidden glass-card">
-        <FederalContractsTableContent
-          contracts={contracts}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={onSort}
-        />
+        <div className="min-w-[800px]">
+          <FederalContractsTableContent
+            contracts={contracts}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={onSort}
+          />
+        </div>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center py-4">
         <FederalContractsPagination
           currentPage={currentPage}
           totalPages={totalPages}
