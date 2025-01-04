@@ -23,3 +23,10 @@ export interface FederalDataResult {
   set_aside?: string | null
   source?: string
 }
+
+export interface SearchResponse {
+  data: FederalDataResult[]
+  totalRecords: number
+  currentPage: number
+  totalPages: number
+}

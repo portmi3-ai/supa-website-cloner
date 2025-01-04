@@ -1,7 +1,7 @@
 import { searchFederalOpportunities } from './federal-procurement.ts'
 import { FederalDataResult, SearchParams } from '../types.ts'
 
-export async function aggregateSearchResults(params: SearchParams): Promise<FederalDataResult[]> {
+export async function aggregateSearchResults(params: SearchParams) {
   console.log('Aggregating search results with params:', {
     ...params,
     timestamp: new Date().toISOString()
@@ -9,10 +9,10 @@ export async function aggregateSearchResults(params: SearchParams): Promise<Fede
 
   try {
     const federalResults = await searchFederalOpportunities(params)
-    console.log(`Found ${federalResults.length} federal results`)
+    console.log(`Found ${federalResults.results.length} federal results out of ${federalResults.totalRecords} total`)
 
     // Apply filters to combined results
-    let allResults = [...federalResults]
+    let allResults = [...federalResults.results]
 
     // Apply agency filter if specified
     if (params.agency && params.agency !== 'all') {
@@ -44,11 +44,16 @@ export async function aggregateSearchResults(params: SearchParams): Promise<Fede
       )
     }
 
-    console.log(`Returning ${allResults.length} total results after filtering`, {
+    console.log(`Returning ${allResults.length} total results for page ${federalResults.currentPage + 1} of ${federalResults.totalPages}`, {
       timestamp: new Date().toISOString()
     })
     
-    return allResults
+    return {
+      data: allResults,
+      totalRecords: federalResults.totalRecords,
+      currentPage: federalResults.currentPage,
+      totalPages: federalResults.totalPages
+    }
   } catch (error) {
     console.error('Error aggregating search results:', {
       error: error.message,

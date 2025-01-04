@@ -39,7 +39,7 @@ serve(async (req) => {
       noticeType: params.noticeType,
       activeOnly: params.activeOnly ?? true,
       page: params.page || 0,
-      limit: Math.min(params.limit || 100, 100), // Cap at 100 results per page
+      limit: Math.min(params.limit || 10, 100), // Cap at 100 results per page
       sortField: params.sortField,
       sortDirection: params.sortDirection
     }
@@ -57,15 +57,8 @@ serve(async (req) => {
       }
     )
 
-    const response = {
-      data: results || [],
-      totalPages: Math.ceil((results?.length || 0) / (cleanParams.limit || 100)),
-      currentPage: cleanParams.page,
-      totalRecords: results?.length || 0
-    }
-
-    logSearchResponse(response)
-    return createSuccessResponse(response)
+    logSearchResponse(results)
+    return createSuccessResponse(results)
   } catch (error) {
     console.error('Search error:', {
       message: error.message,

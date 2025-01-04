@@ -18,7 +18,12 @@ function formatDate(date: Date): string {
   return `${month}/${day}/${year}`
 }
 
-export async function searchFederalOpportunities(params: SearchParams): Promise<FederalDataResult[]> {
+export async function searchFederalOpportunities(params: SearchParams): Promise<{
+  results: FederalDataResult[],
+  totalRecords: number,
+  currentPage: number,
+  totalPages: number
+}> {
   try {
     console.log('Fetching federal opportunities with params:', {
       ...params,
@@ -48,9 +53,9 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
     queryParams.append('postedFrom', formatDate(postedFrom))
     queryParams.append('postedTo', formatDate(postedTo))
     
-    // Handle pagination
-    const limit = Math.min(params.limit || 10, 100)
-    const offset = (params.page || 0) * limit
+    // Handle pagination - SAM.gov uses offset-based pagination
+    const limit = Math.min(params.limit || 10, 100) // Cap at 100 results per page
+    const offset = ((params.page || 0) * limit)
     queryParams.append('limit', String(limit))
     queryParams.append('offset', String(offset))
 
@@ -137,7 +142,12 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
 
     if (!response.opportunitiesData || response.opportunitiesData.length === 0) {
       console.log('No results found for the given search criteria')
-      return []
+      return {
+        results: [],
+        totalRecords: 0,
+        currentPage: params.page || 0,
+        totalPages: 0
+      }
     }
 
     const transformedData = response.opportunitiesData.map((item: any) => ({
@@ -153,8 +163,15 @@ export async function searchFederalOpportunities(params: SearchParams): Promise<
       source: 'sam.gov'
     }))
 
-    console.log(`Transformed ${transformedData.length} results successfully`)
-    return transformedData
+    const totalPages = Math.ceil(response.totalRecords / limit)
+
+    console.log(`Transformed ${transformedData.length} results successfully. Total pages: ${totalPages}`)
+    return {
+      results: transformedData,
+      totalRecords: response.totalRecords,
+      currentPage: params.page || 0,
+      totalPages
+    }
   } catch (error) {
     console.error('Error in searchFederalOpportunities:', {
       error: error instanceof Error ? error.message : String(error),
