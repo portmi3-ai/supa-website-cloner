@@ -1,60 +1,98 @@
-interface RetryConfig {
-  maxAttempts: number
-  initialDelay: number
-  maxDelay: number
-  retryableStatuses?: number[]
-}
-
-export class ApiError extends Error {
+export interface ApiError extends Error {
   status?: number
-  
-  constructor(message: string, status?: number) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-  }
+  response?: Response
 }
 
 export async function withRetry<T>(
-  operation: () => Promise<T>,
-  config: RetryConfig = {
-    maxAttempts: 3,
-    initialDelay: 1000,
-    maxDelay: 5000,
-    retryableStatuses: [429, 500, 502, 503, 504],
-  }
+  fn: () => Promise<T>,
+  options: {
+    maxAttempts?: number
+    initialDelay?: number
+    maxDelay?: number
+    retryableStatuses?: number[]
+  } = {}
 ): Promise<T> {
-  let lastError: ApiError | null = null
-  
-  for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+  const {
+    maxAttempts = 3,
+    initialDelay = 1000,
+    maxDelay = 10000,
+    retryableStatuses = [429, 500, 502, 503, 504]
+  } = options
+
+  let attempt = 1
+  let delay = initialDelay
+
+  while (attempt <= maxAttempts) {
     try {
-      if (attempt > 1) {
-        const delay = Math.min(
-          config.initialDelay * Math.pow(2, attempt - 1),
-          config.maxDelay
-        )
-        console.log(`Retry attempt ${attempt}, waiting ${delay}ms`, {
-          timestamp: new Date().toISOString()
-        })
-        await new Promise(resolve => setTimeout(resolve, delay))
+      return await fn()
+    } catch (error) {
+      const apiError = error as ApiError
+      
+      if (
+        attempt === maxAttempts ||
+        !apiError.status ||
+        !retryableStatuses.includes(apiError.status)
+      ) {
+        throw error
       }
 
-      return await operation()
-    } catch (error) {
-      lastError = error instanceof ApiError ? error : new ApiError(String(error))
-      console.error(`Attempt ${attempt} failed:`, {
-        error: lastError.message,
-        status: lastError.status,
+      console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`, {
+        error: apiError.message,
+        status: apiError.status,
         attempt,
+        delay,
         timestamp: new Date().toISOString()
       })
-
-      const shouldRetry = config.retryableStatuses?.includes(lastError.status || 0)
-      if (!shouldRetry || attempt === config.maxAttempts) {
-        break
-      }
+      
+      await new Promise(resolve => setTimeout(resolve, delay))
+      
+      delay = Math.min(delay * 2, maxDelay)
+      attempt++
     }
   }
+
+  throw new Error('Max retry attempts reached')
+}
+
+export function getRateLimitDelay(): number {
+  return Math.random() * 1000 + 500 // Random delay between 500-1500ms
+}
+
+export function validateApiEndpoint(url: string): boolean {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function validateRequestParams(params: Record<string, any>): string[] {
+  const errors: string[] = []
   
-  throw lastError || new Error('Operation failed after all retry attempts')
+  if (params.size && (params.size < 1 || params.size > 100)) {
+    errors.push('Size must be between 1 and 100')
+  }
+  
+  if (params.start && params.start < 0) {
+    errors.push('Start must be non-negative')
+  }
+  
+  return errors
+}
+
+export async function parseErrorResponse(error: unknown): Promise<string> {
+  if (error instanceof Error) {
+    const apiError = error as ApiError
+    if (apiError.response) {
+      try {
+        const errorText = await apiError.response.text()
+        return errorText || apiError.message
+      } catch {
+        return apiError.message
+      }
+    }
+    return error.message
+  }
+  return String(error)
 }

@@ -3,6 +3,7 @@ import { searchContractData } from './contract-data.ts'
 import { searchEntityData } from './entity-data.ts'
 import { searchFPDSData } from './fpds-data.ts'
 import { FederalDataResult, SearchParams } from '../types.ts'
+import { withRetry } from '../utils/apiRetry.ts'
 
 export async function aggregateSearchResults(params: SearchParams) {
   console.log('Aggregating search results with params:', {
@@ -11,17 +12,30 @@ export async function aggregateSearchResults(params: SearchParams) {
   })
 
   try {
-    // Fetch data from all sources in parallel
+    // Fetch data from all sources in parallel with retry logic
     const [
       federalResults,
       contractResults,
       entityResults,
       fpdsResults
     ] = await Promise.allSettled([
-      searchFederalOpportunities(params),
-      searchContractData(params),
-      searchEntityData({ keyword: params.searchTerm }),
-      searchFPDSData(params)
+      withRetry(() => searchFederalOpportunities(params), {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        retryableStatuses: [429, 500, 502, 503, 504]
+      }),
+      withRetry(() => searchContractData(params), {
+        maxAttempts: 2,
+        initialDelay: 500
+      }),
+      withRetry(() => searchEntityData({ keyword: params.searchTerm }), {
+        maxAttempts: 2,
+        initialDelay: 500
+      }),
+      withRetry(() => searchFPDSData(params), {
+        maxAttempts: 2,
+        initialDelay: 500
+      })
     ])
 
     console.log('Search results received:', {
