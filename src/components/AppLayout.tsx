@@ -12,7 +12,7 @@ export function AppLayout() {
           <div className="flex-1 flex flex-col overflow-hidden">
             <TopBar />
             <main className="flex-1 overflow-y-auto">
-              <div className="container h-full py-6">
+              <div className="h-full py-6 px-4 md:px-6">
                 <Outlet />
               </div>
             </main>
