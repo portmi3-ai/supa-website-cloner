@@ -13,11 +13,11 @@ export function AppLayout() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar />
           <main className="flex-1 overflow-y-auto">
-            <Suspense fallback={<LoadingSpinner />}>
-              <div className="container h-full py-6 w-full max-w-[1400px] transition-all duration-300">
+            <div className="w-full max-w-[1400px] mx-auto transition-all duration-300 px-6 py-6">
+              <Suspense fallback={<LoadingSpinner />}>
                 <Outlet />
-              </div>
-            </Suspense>
+              </Suspense>
+            </div>
           </main>
         </div>
       </div>

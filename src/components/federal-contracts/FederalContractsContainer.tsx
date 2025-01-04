@@ -39,8 +39,8 @@ export function FederalContractsContainer() {
   }, [error, toast])
 
   return (
-    <div className="space-y-6 h-full flex flex-col max-w-[100%] w-full transition-all duration-300">
-      <div className="search-container">
+    <div className="flex flex-col h-full w-full space-y-6">
+      <div className="search-container w-full">
         <FederalContractsHeader />
         <div className="mt-6">
           <FederalContractsControls
