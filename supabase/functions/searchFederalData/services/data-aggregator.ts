@@ -1,4 +1,7 @@
 import { searchFederalOpportunities } from './federal-procurement.ts'
+import { searchContractData } from './contract-data.ts'
+import { searchEntityData } from './entity-data.ts'
+import { searchFPDSData } from './fpds-data.ts'
 import { FederalDataResult, SearchParams } from '../types.ts'
 
 export async function aggregateSearchResults(params: SearchParams) {
@@ -8,20 +11,73 @@ export async function aggregateSearchResults(params: SearchParams) {
   })
 
   try {
-    const federalResults = await searchFederalOpportunities(params)
-    console.log(`Found ${federalResults.results.length} federal results out of ${federalResults.totalRecords} total`)
+    // Fetch data from all sources in parallel
+    const [
+      federalResults,
+      contractResults,
+      entityResults,
+      fpdsResults
+    ] = await Promise.allSettled([
+      searchFederalOpportunities(params),
+      searchContractData(params),
+      searchEntityData({ keyword: params.searchTerm }),
+      searchFPDSData(params)
+    ])
+
+    console.log('Search results received:', {
+      federalStatus: federalResults.status,
+      contractStatus: contractResults.status,
+      entityStatus: entityResults.status,
+      fpdsStatus: fpdsResults.status,
+      timestamp: new Date().toISOString()
+    })
+
+    // Combine results from all successful API calls
+    let allResults: FederalDataResult[] = []
+
+    if (federalResults.status === 'fulfilled') {
+      allResults = [...allResults, ...federalResults.value.results]
+    }
+
+    if (contractResults.status === 'fulfilled') {
+      const contractData = contractResults.value.map((item: any) => ({
+        id: item.contractId,
+        title: item.title || 'No Title',
+        agency: item.agency,
+        type: 'contract',
+        posted_date: item.datePosted,
+        value: item.contractValue,
+        response_due: null,
+        naics_code: item.naicsCode,
+        set_aside: null,
+        source: 'contract-data'
+      }))
+      allResults = [...allResults, ...contractData]
+    }
+
+    if (fpdsResults.status === 'fulfilled') {
+      const fpdsData = fpdsResults.value.map((item: any) => ({
+        id: item.id,
+        title: item.title || 'No Title',
+        agency: item.agency,
+        type: 'fpds',
+        posted_date: item.date,
+        value: item.obligatedAmount,
+        response_due: null,
+        naics_code: item.naicsCode,
+        set_aside: null,
+        source: 'fpds'
+      }))
+      allResults = [...allResults, ...fpdsData]
+    }
 
     // Apply filters to combined results
-    let allResults = [...federalResults.results]
-
-    // Apply agency filter if specified
     if (params.agency && params.agency !== 'all') {
       allResults = allResults.filter(result => 
         result.agency?.toLowerCase().includes(params.agency?.toLowerCase() || '')
       )
     }
 
-    // Apply date range filters if specified
     if (params.startDate) {
       const startDate = new Date(params.startDate)
       allResults = allResults.filter(result => 
@@ -36,23 +92,23 @@ export async function aggregateSearchResults(params: SearchParams) {
       )
     }
 
-    // Apply active only filter
-    if (params.activeOnly) {
-      const now = new Date()
-      allResults = allResults.filter(result => 
-        result.response_due ? new Date(result.response_due) >= now : true
-      )
-    }
+    // Calculate pagination
+    const totalRecords = allResults.length
+    const pageSize = params.limit || 10
+    const totalPages = Math.ceil(totalRecords / pageSize)
+    const currentPage = params.page || 0
+    const start = currentPage * pageSize
+    const end = start + pageSize
 
-    console.log(`Returning ${allResults.length} total results for page ${federalResults.currentPage + 1} of ${federalResults.totalPages}`, {
+    console.log(`Returning ${allResults.length} total results for page ${currentPage + 1} of ${totalPages}`, {
       timestamp: new Date().toISOString()
     })
     
     return {
-      data: allResults,
-      totalRecords: federalResults.totalRecords,
-      currentPage: federalResults.currentPage,
-      totalPages: federalResults.totalPages
+      data: allResults.slice(start, end),
+      totalRecords,
+      currentPage,
+      totalPages
     }
   } catch (error) {
     console.error('Error aggregating search results:', {
